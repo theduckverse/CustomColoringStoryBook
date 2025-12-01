@@ -130,12 +130,13 @@
           disabled>
           📄 Download PDF
         </button>
-  id="generate-images-btn"
-  class="w-full mt-2 inline-flex items-center justify-center gap-2 text-xs font-medium rounded-xl px-4 py-2 border border-slate-700 text-slate-200 hover:bg-slate-800/80 transition disabled:opacity-60 disabled:cursor-not-allowed"
-  disabled>
-  🎨 Generate Coloring Pages
-</button>
 
+        <button
+          id="generate-images-btn"
+          class="w-full mt-2 inline-flex items-center justify-center gap-2 text-xs font-medium rounded-xl px-4 py-2 border border-slate-700 text-slate-200 hover:bg-slate-800/80 transition disabled:opacity-60 disabled:cursor-not-allowed"
+          disabled>
+          🎨 Generate Coloring Pages
+        </button>
 
         <p class="mt-4 text-[11px] text-slate-500">
           In production you'll add logins, payment, and save each book to a user’s library.
@@ -197,40 +198,40 @@
               <!-- li items -->
             </ol>
           </div>
+
+          <!-- Coloring images -->
+          <div id="images-card" class="hidden bg-slate-950/80 rounded-2xl border border-slate-800 p-4">
+            <div class="flex items-center justify-between gap-3 mb-2">
+              <div>
+                <p class="text-[11px] uppercase tracking-[0.12em] text-slate-500 mb-0.5">
+                  Coloring images
+                </p>
+                <h3 class="text-lg font-semibold">AI-generated pages</h3>
+              </div>
+              <span class="text-[11px] rounded-full px-2.5 py-1 bg-slate-800/80 text-slate-300 border border-slate-700/80">
+                Preview only
+              </span>
+            </div>
+            <p class="text-xs text-slate-400 mb-2">
+              These previews are generated from the page prompts. You can right-click and save images to include in print layouts or KDP files.
+            </p>
+            <div id="images-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <!-- images go here -->
+            </div>
+          </div>
         </div>
       </div>
     </section>
   </main>
 </div>
-<!-- Coloring images -->
-<div id="images-card" class="hidden bg-slate-950/80 rounded-2xl border border-slate-800 p-4">
-  <div class="flex items-center justify-between gap-3 mb-2">
-    <div>
-      <p class="text-[11px] uppercase tracking-[0.12em] text-slate-500 mb-0.5">
-        Coloring images
-      </p>
-      <h3 class="text-lg font-semibold">AI-generated pages</h3>
-    </div>
-    <span class="text-[11px] rounded-full px-2.5 py-1 bg-slate-800/80 text-slate-300 border border-slate-700/80">
-      Preview only
-    </span>
-  </div>
-  <p class="text-xs text-slate-400 mb-2">
-    These previews are generated from the page prompts. You can right-click and save images to include in print layouts or KDP files.
-  </p>
-  <div id="images-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-    <!-- images go here -->
-  </div>
-</div>
 
 <script>
-  const downloadBtn = document.getElementById("download-pdf-btn");
-  const imagesBtn = document.getElementById("generate-images-btn");
   const form = document.getElementById("book-form");
   const generateBtn = document.getElementById("generate-btn");
   const generateBtnLabel = document.getElementById("generate-btn-label");
   const generateBtnSpinner = document.getElementById("generate-btn-spinner");
   const downloadBtn = document.getElementById("download-pdf-btn");
+  const imagesBtn = document.getElementById("generate-images-btn");
 
   const statusIcon = document.getElementById("status-icon");
   const statusTitle = document.getElementById("status-title");
@@ -243,6 +244,7 @@
 
   const promptsCard = document.getElementById("prompts-card");
   const promptsList = document.getElementById("prompts-list");
+
   const imagesCard = document.getElementById("images-card");
   const imagesGrid = document.getElementById("images-grid");
 
@@ -290,9 +292,10 @@
       title: "Book generated.",
       text: "You can review the story and prompts below and download a simple PDF. Later you can hook this into printing and payments."
     });
-  lastBookData = data;
-  downloadBtn.disabled = false;
-  imagesBtn.disabled = !(prompts && prompts.length);
+
+    lastBookData = data;
+    downloadBtn.disabled = false;
+    imagesBtn.disabled = !(prompts && prompts.length);
   }
 
   form.addEventListener("submit", async (e) => {
@@ -315,6 +318,7 @@
 
     setLoading(true);
     downloadBtn.disabled = true;
+    imagesBtn.disabled = true;
     lastBookData = null;
 
     setStatus({
@@ -347,34 +351,36 @@
       setLoading(false);
     }
   });
-function renderImages(images) {
-  imagesGrid.innerHTML = "";
-  images.forEach((img) => {
-    const wrapper = document.createElement("figure");
-    wrapper.className = "border border-slate-800 rounded-xl overflow-hidden bg-slate-900";
 
-    const imageEl = document.createElement("img");
-    imageEl.src = img.url;
-    imageEl.alt = `Coloring page ${img.page}`;
-    imageEl.className = "w-full h-auto block";
+  function renderImages(images) {
+    imagesGrid.innerHTML = "";
+    images.forEach((img) => {
+      const wrapper = document.createElement("figure");
+      wrapper.className = "border border-slate-800 rounded-xl overflow-hidden bg-slate-900";
 
-    const caption = document.createElement("figcaption");
-    caption.className = "text-xs text-slate-400 px-3 py-2";
-    caption.textContent = `Page ${img.page}`;
+      const imageEl = document.createElement("img");
+      imageEl.src = img.url;
+      imageEl.alt = `Coloring page ${img.page}`;
+      imageEl.className = "w-full h-auto block";
 
-    wrapper.appendChild(imageEl);
-    wrapper.appendChild(caption);
-    imagesGrid.appendChild(wrapper);
-  });
+      const caption = document.createElement("figcaption");
+      caption.className = "text-xs text-slate-400 px-3 py-2";
+      caption.textContent = `Page ${img.page}`;
 
-  imagesCard.classList.remove("hidden");
+      wrapper.appendChild(imageEl);
+      wrapper.appendChild(caption);
+      imagesGrid.appendChild(wrapper);
+    });
 
-  setStatus({
-    icon: "🖍️",
-    title: "Coloring pages generated.",
-    text: "These are AI image previews based on your page prompts. You can save them and use them in your print-ready layout."
-  });
-}
+    imagesCard.classList.remove("hidden");
+
+    setStatus({
+      icon: "🖍️",
+      title: "Coloring pages generated.",
+      text: "These are AI image previews based on your page prompts. You can save them and use them in your print-ready layout."
+    });
+  }
+
   downloadBtn.addEventListener("click", async () => {
     if (!lastBookData) return;
 
@@ -406,38 +412,39 @@ function renderImages(images) {
       });
     }
   });
+
   imagesBtn.addEventListener("click", async () => {
-  if (!lastBookData || !lastBookData.prompts || !lastBookData.prompts.length) return;
+    if (!lastBookData || !lastBookData.prompts || !lastBookData.prompts.length) return;
 
-  imagesBtn.disabled = true;
-  setStatus({
-    icon: "✨",
-    title: "Generating coloring page images…",
-    text: "Asking the image model to create line-art pages from your prompts. This may take a little longer than text."
-  });
-
-  try {
-    const res = await fetch("/api/generate-images", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompts: lastBookData.prompts })
-    });
-
-    if (!res.ok) throw new Error("Image request failed");
-
-    const data = await res.json();
-    renderImages(data.images || []);
-  } catch (err) {
-    console.error(err);
+    imagesBtn.disabled = true;
     setStatus({
-      icon: "❌",
-      title: "Image generation failed.",
-      text: "Check the server logs for /api/generate-images. Make sure your OPENAI_API_KEY works for images."
+      icon: "✨",
+      title: "Generating coloring page images…",
+      text: "Asking the image model to create line-art pages from your prompts. This may take a little longer than text."
     });
-  } finally {
-    imagesBtn.disabled = false;
-  }
-});
+
+    try {
+      const res = await fetch("/api/generate-images", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompts: lastBookData.prompts })
+      });
+
+      if (!res.ok) throw new Error("Image request failed");
+
+      const data = await res.json();
+      renderImages(data.images || []);
+    } catch (err) {
+      console.error(err);
+      setStatus({
+        icon: "❌",
+        title: "Image generation failed.",
+        text: "Check the server logs for /api/generate-images. Make sure your OPENAI_API_KEY works for images."
+      });
+    } finally {
+      imagesBtn.disabled = false;
+    }
+  });
 </script>
 </body>
 </html>
