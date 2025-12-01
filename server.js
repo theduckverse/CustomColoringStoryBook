@@ -252,7 +252,6 @@ app.post("/api/generate-images", async (req, res) => {
         page: item.page || i + 1,
         url
       });
-    }
 
     return res.json({ images });
   } catch (err) {
@@ -269,6 +268,7 @@ app.get("*", (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);
 });
+
 
 
 
