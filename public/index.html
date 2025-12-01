@@ -12,13 +12,13 @@
       theme: {
         extend: {
           colors: {
-            primary: "#4DA3FF",       // kid-friendly blue
+            primary: "#4DA3FF",
             primaryDark: "#1E88E5",
             accentYellow: "#FFC94A",
             accentRed: "#FF6B6B",
             accentGreen: "#6BCB77",
             accentPurple: "#A97FFF",
-            bgLight: "#FFF9EB",      // warm cream
+            bgLight: "#FFF9EB",
             wood: "#D8A25E",
             woodDark: "#B17839"
           },
@@ -40,19 +40,19 @@
 </head>
 <body class="min-h-screen bg-bgLight text-slate-800 font-fun">
 <div class="min-h-screen">
-  <!-- Top header + tabs -->
+  <!-- HEADER -->
   <header class="border-b border-wood/40 bg-white shadow-soft">
     <div class="max-w-5xl mx-auto px-4 pt-4 pb-2 flex items-center gap-4">
-   <!-- Scribbles mascot -->
-<div class="relative flex items-center">
-  <div class="w-16 h-16 rounded-2xl bg-amber-200 border-4 border-amber-300 overflow-hidden shadow-soft flex items-center justify-center">
-    <img
-      src="/scribbles.png"
-      alt="Scribbles the Crayon"
-      class="w-full h-full object-cover"
-    />
-  </div>
-</div>
+      <!-- Scribbles mascot -->
+      <div class="relative flex items-center">
+        <div class="w-14 h-14 rounded-2xl bg-amber-200 border-4 border-amber-300 overflow-hidden shadow-soft flex items-center justify-center">
+          <img
+            src="/scribbles.png"
+            alt="Scribbles the Crayon"
+            class="w-full h-full object-cover"
+          />
+        </div>
+      </div>
       <div class="flex-1">
         <h1 class="text-2xl font-bold tracking-tight text-amber-900">
           Magic Story Colorbooks
@@ -69,7 +69,7 @@
       </div>
     </div>
 
-    <!-- Color tabs -->
+    <!-- Tabs -->
     <nav class="max-w-5xl mx-auto px-4 pb-3">
       <div class="flex flex-wrap gap-2 text-xs font-semibold">
         <button class="px-4 py-1.5 rounded-full bg-primary text-white shadow-soft">
@@ -92,27 +92,34 @@
   </header>
 
   <main class="max-w-5xl mx-auto px-4 py-6 lg:py-8 flex flex-col lg:flex-row gap-8">
-    <!-- LEFT: Form -->
+    <!-- LEFT: FORM -->
     <section class="w-full lg:w-[40%]">
-      <div class="bg-white rounded-2xl border border-amber-200 shadow-soft p-3 flex items-center gap-3">
-  <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center border border-amber-200 overflow-hidden">
-    <img
-      src="/scribbles.png"
-      alt="Scribbles the Crayon"
-      class="w-full h-full object-cover"
-    />
-  </div>
-  <div class="text-xs">
-    <p class="font-semibold text-amber-900">Hi, I’m Scribbles!</p>
-    <p class="text-amber-800/80">
-      Tell me about your character and I’ll help you make a story coloring book for the shelf.
-    </p>
-  </div>
-</div>
+      <div class="bg-white rounded-2xl border border-amber-200 shadow-heavy p-5 relative overflow-hidden">
+        <div class="pointer-events-none absolute -top-10 -right-8 w-32 h-32 rounded-full bg-[#FEF3C7]/80 blur-xl"></div>
+        <div class="pointer-events-none absolute -bottom-10 -left-10 w-32 h-32 rounded-full bg-[#DBEAFE]/80 blur-xl"></div>
 
+        <div class="relative space-y-4">
+          <!-- Scribbles intro bubble -->
+          <div class="bg-white rounded-2xl border border-amber-200 shadow-soft p-3 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center border border-amber-200 overflow-hidden">
+              <img
+                src="/scribbles.png"
+                alt="Scribbles the Crayon"
+                class="w-full h-full object-cover"
+              />
+            </div>
+            <div class="text-xs">
+              <p class="font-semibold text-amber-900">Hi, I’m Scribbles!</p>
+              <p class="text-amber-800/80">
+                Tell me about your character and I’ll help you make a story coloring book for the shelf.
+              </p>
+            </div>
+          </div>
+
+          <h2 class="text-xl font-bold mb-1 flex items-center gap-2 text-amber-900">
             ✏️ Describe your book
           </h2>
-          <p class="text-sm text-amber-800/80 mb-4">
+          <p class="text-sm text-amber-800/80 mb-2">
             Example: “An iguana named Sammy who’s afraid of the dark and learns to be brave at night.”
           </p>
 
@@ -203,28 +210,15 @@
             🎨 Generate Coloring Pages
           </button>
 
-          <p class="mt-4 text-[11px] text-amber-800/80">
+          <p class="mt-2 text-[11px] text-amber-800/80">
             Later you can add accounts, payments, and a saved “book shelf” for each child.
           </p>
         </div>
       </div>
     </section>
 
-    <!-- RIGHT: Shelf + output -->
+    <!-- RIGHT: STATUS + SHELVES -->
     <section class="w-full lg:w-[60%] space-y-4">
-      <!-- Speech bubble hint -->
-      <div class="bg-white rounded-2xl border border-amber-200 shadow-soft p-3 flex items-center gap-3">
-        <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center border border-amber-200">
-          🖍️
-        </div>
-        <div class="text-xs">
-          <p class="font-semibold text-amber-900">Your magic book will appear on the shelf!</p>
-          <p class="text-amber-800/80">
-            First we write the story, then we add coloring pages underneath like books in a library.
-          </p>
-        </div>
-      </div>
-
       <!-- Status -->
       <div id="status-bar"
            class="rounded-2xl border border-amber-200 bg-[#FFFBEB] px-3.5 py-3 flex items-start gap-2 text-xs text-amber-900 shadow-soft">
@@ -239,13 +233,11 @@
 
       <!-- Shelf area -->
       <div class="bg-transparent flex-1 flex flex-col gap-6">
-        <!-- Top shelf: story book -->
+        <!-- Top shelf: story -->
         <div class="relative pb-6">
-          <!-- wooden plank -->
           <div class="absolute left-0 right-0 bottom-0 h-4 bg-wood border-t border-woodDark shadow-inner"></div>
 
           <div class="flex gap-4 px-2 pb-3">
-            <!-- Story book card (looks like a book on the shelf) -->
             <div id="story-card"
                  class="hidden bg-white rounded-xl border-2 border-amber-300 shadow-heavy p-4 w-full max-w-sm">
               <div class="flex items-center justify-between gap-3 mb-2">
@@ -413,7 +405,7 @@
     if (!mainCharacter.trim() && !storyIdea.trim()) {
       setStatus({
         icon: "⚠️",
-        title: "Tell the crayon more!",
+        title: "Tell Scribbles a bit more!",
         text: "Add a main character, a feeling, or a problem you want the story to be about."
       });
       return;
@@ -426,8 +418,8 @@
 
     setStatus({
       icon: "✨",
-      title: "Writing your magic story…",
-      text: "Your crayon helper is asking the AI to write a cosy story with page-by-page coloring prompts."
+      title: "Scribbles is writing your magic story…",
+      text: "Scribbles is writing a cosy story with page-by-page coloring prompts."
     });
 
     try {
