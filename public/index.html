@@ -43,12 +43,16 @@
   <!-- Top header + tabs -->
   <header class="border-b border-wood/40 bg-white shadow-soft">
     <div class="max-w-5xl mx-auto px-4 pt-4 pb-2 flex items-center gap-4">
-      <!-- Crayon mascot -->
-      <div class="relative flex items-center">
-        <div class="w-14 h-14 rounded-2xl bg-amber-200 border-4 border-amber-300 flex items-center justify-center shadow-soft">
-          <span class="text-3xl">🖍️</span>
-        </div>
-      </div>
+   <!-- Scribbles mascot -->
+<div class="relative flex items-center">
+  <div class="w-16 h-16 rounded-2xl bg-amber-200 border-4 border-amber-300 overflow-hidden shadow-soft flex items-center justify-center">
+    <img
+      src="/scribbles.png"
+      alt="Scribbles the Crayon"
+      class="w-full h-full object-cover"
+    />
+  </div>
+</div>
       <div class="flex-1">
         <h1 class="text-2xl font-bold tracking-tight text-amber-900">
           Magic Story Colorbooks
@@ -90,13 +94,22 @@
   <main class="max-w-5xl mx-auto px-4 py-6 lg:py-8 flex flex-col lg:flex-row gap-8">
     <!-- LEFT: Form -->
     <section class="w-full lg:w-[40%]">
-      <div class="bg-white rounded-2xl border border-amber-200 shadow-heavy p-5 relative overflow-hidden">
-        <!-- soft background circles -->
-        <div class="pointer-events-none absolute -top-10 -right-8 w-32 h-32 rounded-full bg-[#FEF3C7]/80 blur-xl"></div>
-        <div class="pointer-events-none absolute -bottom-10 -left-10 w-32 h-32 rounded-full bg-[#DBEAFE]/80 blur-xl"></div>
+      <div class="bg-white rounded-2xl border border-amber-200 shadow-soft p-3 flex items-center gap-3">
+  <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center border border-amber-200 overflow-hidden">
+    <img
+      src="/scribbles.png"
+      alt="Scribbles the Crayon"
+      class="w-full h-full object-cover"
+    />
+  </div>
+  <div class="text-xs">
+    <p class="font-semibold text-amber-900">Hi, I’m Scribbles!</p>
+    <p class="text-amber-800/80">
+      Tell me about your character and I’ll help you make a story coloring book for the shelf.
+    </p>
+  </div>
+</div>
 
-        <div class="relative">
-          <h2 class="text-xl font-bold mb-1 flex items-center gap-2 text-amber-900">
             ✏️ Describe your book
           </h2>
           <p class="text-sm text-amber-800/80 mb-4">
