@@ -294,7 +294,7 @@
     });
 
     try {
-      const res = await fetch("/api/generate-book", {
+      fetch("https://magic-story-colorbooks.onrender.com/api/generate-book"){
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, mainCharacter, storyIdea, ageRange, pageCount })
@@ -302,6 +302,7 @@
 
       if (!res.ok) {
         throw new Error("Request failed");
+      
       }
 
       const data = await res.json();
@@ -322,7 +323,7 @@
     if (!lastBookData) return;
 
     try {
-      const res = await fetch("/api/export-pdf", {
+      fetch("https://magic-story-colorbooks.onrender.com/api/export-pdf"){
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(lastBookData)
@@ -352,3 +353,4 @@
 </script>
 </body>
 </html>
+
