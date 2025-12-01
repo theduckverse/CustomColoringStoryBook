@@ -14,7 +14,6 @@ if (!process.env.OPENAI_API_KEY) {
   console.error("❌ Missing OPENAI_API_KEY in .env");
   process.exit(1);
 }
-
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
@@ -200,42 +199,53 @@ app.post("/api/export-pdf", async (req, res) => {
     return res.status(500).json({ error: "Failed to generate PDF." });
   }
 });
-// --- API: Generate coloring-page images ---
-// Expects { prompts: [{ page: number, prompt?: string, description?: string, text?: string }, ...] }
+// --- API: Generate coloring-page images with OpenAI ---
 app.post("/api/generate-images", async (req, res) => {
+  const { prompts } = req.body || {};
+
+  if (!Array.isArray(prompts) || prompts.length === 0) {
+    return res.status(400).json({ error: "No prompts provided." });
+  }
+
+  // Safety: limit how many coloring pages per request (controls cost & time)
+  const maxImages = Math.min(prompts.length, 8);
+
   try {
-    const { prompts } = req.body || {};
-
-    if (!Array.isArray(prompts) || prompts.length === 0) {
-      return res.status(400).json({ error: "No prompts provided." });
-    }
-
-    // Cap how many we generate at once (for cost/speed)
-    const maxImages = Math.min(prompts.length, 8);
-
     const images = [];
 
+    // Generate one image per page prompt
     for (let i = 0; i < maxImages; i++) {
-      const item = prompts[i] || {};
-      // Try multiple possible fields + fallback
-      const basePrompt =
-        item.prompt ||
-        item.description ||
-        item.text ||
-        `Black and white line-art coloring page illustration for page ${item.page || i + 1} of a children's story. Cute characters, simple background, thick outlines, no shading.`;
+      const item = prompts[i];
+      const page = item.page || i + 1;
+      const basePrompt = item.prompt || "";
 
-      const fullPrompt = `${basePrompt}
-Black and white line-art coloring book page, thick outlines, no shading, simple background, kid-friendly, 2D illustration.`;
-
-      console.log("Generating image for page", item.page || i + 1);
+      const fullPrompt = `
+        ${basePrompt}
+        Black and white line-art coloring page for children.
+        Thick outlines, no shading, no background clutter.
+        Simple, cute, kid-friendly style.
+      `.trim();
 
       const response = await openai.images.generate({
         model: "gpt-image-1",
         prompt: fullPrompt,
         size: "1024x1024",
-        n: 1
+        // You *can* tweak style/quality later if you want
       });
 
+      const imageUrl = response.data[0]?.url;
+      images.push({ page, url: imageUrl });
+    }
+
+    return res.json({ images });
+  } catch (err) {
+    console.error("Error generating images:", err.response?.data || err.message);
+    return res.status(500).json({
+      error: "Image generation failed",
+      details: err.message,
+    });
+  }
+});
       const url = response.data[0].url;
 
       images.push({
@@ -259,5 +269,6 @@ app.get("*", (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);
 });
+
 
 
