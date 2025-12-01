@@ -200,6 +200,47 @@ app.post("/api/export-pdf", async (req, res) => {
     return res.status(500).json({ error: "Failed to generate PDF." });
   }
 });
+// --- API: Generate coloring-page images ---
+// Expects { prompts: [{ page: number, prompt: string }, ...] }
+app.post("/api/generate-images", async (req, res) => {
+  try {
+    const { prompts } = req.body || {};
+
+    if (!Array.isArray(prompts) || prompts.length === 0) {
+      return res.status(400).json({ error: "No prompts provided." });
+    }
+
+    // To keep speed/cost reasonable, cap how many images we make at once
+    const maxImages = Math.min(prompts.length, 8);
+
+    const images = [];
+    for (let i = 0; i < maxImages; i++) {
+      const item = prompts[i];
+      const basePrompt = item.prompt || "";
+
+      const fullPrompt = `${basePrompt}
+Black and white line-art coloring book page, thick outlines, no shading, simple background, kid-friendly, 2D illustration.`;
+
+      const response = await openai.images.generate({
+        model: "gpt-image-1",
+        prompt: fullPrompt,
+        size: "1024x1024",
+        n: 1
+      });
+
+      const url = response.data[0].url;
+      images.push({
+        page: item.page,
+        url
+      });
+    }
+
+    return res.json({ images });
+  } catch (err) {
+    console.error("Error in /api/generate-images:", err);
+    return res.status(500).json({ error: "Failed to generate images." });
+  }
+});
 
 // --- SPA fallback (serve index.html) ---
 app.get("*", (req, res) => {
@@ -210,3 +251,4 @@ app.get("*", (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);
 });
+
