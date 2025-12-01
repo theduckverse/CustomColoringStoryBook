@@ -201,7 +201,7 @@ app.post("/api/export-pdf", async (req, res) => {
   }
 });
 // --- API: Generate coloring-page images ---
-// Expects { prompts: [{ page: number, prompt: string }, ...] }
+// Expects { prompts: [{ page: number, prompt?: string, description?: string, text?: string }, ...] }
 app.post("/api/generate-images", async (req, res) => {
   try {
     const { prompts } = req.body || {};
@@ -210,16 +210,24 @@ app.post("/api/generate-images", async (req, res) => {
       return res.status(400).json({ error: "No prompts provided." });
     }
 
-    // To keep speed/cost reasonable, cap how many images we make at once
+    // Cap how many we generate at once (for cost/speed)
     const maxImages = Math.min(prompts.length, 8);
 
     const images = [];
+
     for (let i = 0; i < maxImages; i++) {
-      const item = prompts[i];
-      const basePrompt = item.prompt || "";
+      const item = prompts[i] || {};
+      // Try multiple possible fields + fallback
+      const basePrompt =
+        item.prompt ||
+        item.description ||
+        item.text ||
+        `Black and white line-art coloring page illustration for page ${item.page || i + 1} of a children's story. Cute characters, simple background, thick outlines, no shading.`;
 
       const fullPrompt = `${basePrompt}
 Black and white line-art coloring book page, thick outlines, no shading, simple background, kid-friendly, 2D illustration.`;
+
+      console.log("Generating image for page", item.page || i + 1);
 
       const response = await openai.images.generate({
         model: "gpt-image-1",
@@ -229,19 +237,19 @@ Black and white line-art coloring book page, thick outlines, no shading, simple 
       });
 
       const url = response.data[0].url;
+
       images.push({
-        page: item.page,
+        page: item.page || i + 1,
         url
       });
     }
 
     return res.json({ images });
   } catch (err) {
-    console.error("Error in /api/generate-images:", err);
+    console.error("Error in /api/generate-images:", err?.response?.data || err);
     return res.status(500).json({ error: "Failed to generate images." });
   }
 });
-
 // --- SPA fallback (serve index.html) ---
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
@@ -251,4 +259,5 @@ app.get("*", (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);
 });
+
 
