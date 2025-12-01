@@ -8,35 +8,50 @@
   <!-- Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            primary: "#4DA3FF",
-            primaryDark: "#1E88E5",
-            accentYellow: "#FFC94A",
-            accentRed: "#FF6B6B",
-            accentGreen: "#6BCB77",
-            accentPurple: "#A97FFF",
-            bgLight: "#FFF9EB",
-            wood: "#D8A25E",
-            woodDark: "#B17839"
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          primary: "#4DA3FF",
+          primaryDark: "#1E88E5",
+          accentYellow: "#FFC94A",
+          accentRed: "#FF6B6B",
+          accentGreen: "#6BCB77",
+          accentPurple: "#A97FFF",
+          bgLight: "#FFF9EB",
+          wood: "#D8A25E",
+          woodDark: "#B17839"
+        },
+        borderRadius: {
+          xl: "1rem",
+          "2xl": "1.5rem",
+        },
+        boxShadow: {
+          soft: "0 8px 20px rgba(15,23,42,0.08)",
+          heavy: "0 18px 40px rgba(15,23,42,0.18)"
+        },
+        fontFamily: {
+          fun: ["\"Comic Sans MS\"", "Poppins", "system-ui", "sans-serif"]
+        },
+        keyframes: {
+          scribbleBounce: {
+            "0%, 100%": { transform: "translateY(0)" },
+            "50%": { transform: "translateY(-4px)" }
           },
-          borderRadius: {
-            xl: "1rem",
-            "2xl": "1.5rem",
-          },
-          boxShadow: {
-            soft: "0 8px 20px rgba(15,23,42,0.08)",
-            heavy: "0 18px 40px rgba(15,23,42,0.18)"
-          },
-          fontFamily: {
-            fun: ["\"Comic Sans MS\"", "Poppins", "system-ui", "sans-serif"]
+          scribbleWiggle: {
+            "0%, 100%": { transform: "rotate(0deg)" },
+            "25%": { transform: "rotate(-5deg)" },
+            "75%": { transform: "rotate(5deg)" }
           }
+        },
+        animation: {
+          "scribble-bounce": "scribbleBounce 2.2s ease-in-out infinite",
+          "scribble-wiggle": "scribbleWiggle 0.8s ease-in-out"
         }
       }
-    };
-  </script>
+    }
+  };
+</script>
 </head>
 <body class="min-h-screen bg-bgLight text-slate-800 font-fun">
 <div class="min-h-screen">
@@ -45,7 +60,7 @@
     <div class="max-w-5xl mx-auto px-4 pt-4 pb-2 flex items-center gap-4">
       <!-- Scribbles mascot -->
       <div class="relative flex items-center">
-        <div class="w-14 h-14 rounded-2xl bg-amber-200 border-4 border-amber-300 overflow-hidden shadow-soft flex items-center justify-center">
+        <div class="w-14 h-14 rounded-2xl bg-amber-200 border-4 border-amber-300 overflow-hidden shadow-soft flex items-center justify-center animate-scribble-bounce">
           <img
             src="/Scribbles.jpg"
             alt="Scribbles the Crayon"
@@ -100,21 +115,21 @@
 
         <div class="relative space-y-4">
           <!-- Scribbles intro bubble -->
-          <div class="bg-white rounded-2xl border border-amber-200 shadow-soft p-3 flex items-center gap-3">
-            <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center border border-amber-200 overflow-hidden">
-              <img
-                src="/Scribbles.jpg"
-                alt="Scribbles the Crayon"
-                class="w-full h-full object-cover"
-              />
-            </div>
-            <div class="text-xs">
-              <p class="font-semibold text-amber-900">Hi, I’m Scribbles!</p>
-              <p class="text-amber-800/80">
-                Tell me about your character and I’ll help you make a story coloring book for the shelf.
-              </p>
-            </div>
-          </div>
+         <div class="bg-white rounded-2xl border border-amber-200 shadow-soft p-3 flex items-center gap-3 group">
+  <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center border border-amber-200 overflow-hidden">
+    <img
+      src="/Scribbles.jpg"
+      alt="Scribbles the Crayon"
+      class="w-full h-full object-cover group-hover:animate-scribble-wiggle"
+    />
+  </div>
+  <div class="text-xs">
+    <p class="font-semibold text-amber-900">Hi, I’m Scribbles!</p>
+    <p class="text-amber-800/80">
+      Tell me about your character and I’ll help you make a story coloring book for the shelf.
+    </p>
+  </div>
+</div>
 
           <h2 class="text-xl font-bold mb-1 flex items-center gap-2 text-amber-900">
             ✏️ Describe your book
