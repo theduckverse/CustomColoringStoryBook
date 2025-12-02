@@ -29,45 +29,71 @@ if (!STABILITY_API_KEY) {
 // 4. API Routes
 // =================================================================
 
-// --- API: Generate Book (Placeholder) ---
-// This endpoint is crucial for the frontend and should call a Large Language Model (LLM)
-// to generate the story, paragraphs, and picture prompts.
+// --- API: Generate Book (Template-Based Custom Story) ---
 app.post("/api/generate-book", async (req, res) => {
-    // You would integrate your LLM call (e.g., Gemini, OpenAI, etc.) here.
-    const { title, mainCharacter, storyIdea, ageRange, pageCount } = req.body;
+  const { title, mainCharacter, storyIdea, ageRange, pageCount } = req.body;
 
-    if (!mainCharacter || !storyIdea) {
-        return res.status(400).json({ error: "Missing required character or story idea." });
+  if (!mainCharacter || !storyIdea) {
+    return res
+      .status(400)
+      .json({ error: "Missing required character or story idea." });
+  }
+
+  // Normalize / sanitize inputs
+  const safeTitle =
+    title && title.trim().length > 0 ? title.trim() : "A Very Special Adventure";
+  const safeCharacter =
+    mainCharacter && mainCharacter.trim().length > 0
+      ? mainCharacter.trim()
+      : "a brave little hero";
+  const safeIdea = storyIdea.trim();
+  const safeAgeRange = ageRange || "kids";
+
+  const numPagesRaw = parseInt(pageCount, 10);
+  const numPages =
+    isNaN(numPagesRaw) ? 8 : Math.max(4, Math.min(numPagesRaw, 16));
+
+  // --- Simple template-based paragraphs using your inputs ---
+  const paragraphs = [
+    `${safeCharacter} has a big imagination, but lately something has been on their mind: ${safeIdea}. Every day, it feels a little bit bigger and a little bit harder to ignore.`,
+    `One day, ${safeCharacter} decides something has to change. They take a deep breath, look around, and wonder if maybe there is more help and magic waiting just outside their comfort zone.`,
+    `As the adventure begins, ${safeCharacter} meets new friends and discovers small, brave steps they can take. Each step makes the problem feel just a tiny bit smaller and their heart a lot more confident.`,
+    `Along the way, ${safeCharacter} learns that it's okay to feel nervous and it's okay to ask for help. The journey shows them that they are never really alone, even when things seem scary or confusing.`,
+    `By the end of the adventure, ${safeCharacter} realizes that ${safeIdea.toLowerCase()} doesn’t have to be a scary thing anymore. They feel proud, calm, and ready for the next cozy adventure.`,
+  ];
+
+  // --- Build picture prompts for each page, tied to THIS story ---
+  const prompts = [];
+  for (let i = 1; i <= numPages; i++) {
+    let promptText = "";
+
+    if (i === 1) {
+      promptText = `${safeCharacter} looking thoughtful in a cozy room, thinking about: ${safeIdea}.`;
+    } else if (i === 2) {
+      promptText = `${safeCharacter} taking a brave first step on their new adventure related to: ${safeIdea}.`;
+    } else if (i === 3) {
+      promptText = `${safeCharacter} meeting a friendly helper or guide who makes them feel safer and more confident.`;
+    } else if (i === 4) {
+      promptText = `${safeCharacter} practicing a small, brave action that helps them with ${safeIdea.toLowerCase()}.`;
+    } else if (i === numPages) {
+      promptText = `${safeCharacter} feeling proud and calm at the end of the story, showing how they have grown and found courage.`;
+    } else {
+      promptText = `${safeCharacter} in a gentle scene that continues their adventure about ${safeIdea.toLowerCase()}, looking curious and hopeful.`;
     }
 
-    // --- MOCK RESPONSE for testing if the LLM is not set up ---
-    // This structured data is what the frontend expects.
-    const mockTitle = title || "Sammy's Brave Night";
-    const mockTagline = `A story for ages ${ageRange} about bravery.`;
-    const mockParagraphs = [
-        "Sammy the little iguana loved sunshine, but when the sun went down, his cozy bedroom felt too big and dark. He hid under his green blanket.",
-        "One night, a little glowing firefly, Flicker, landed on his windowsill. 'The dark isn't scary, Sammy,' whispered Flicker. 'It’s just quiet.'",
-        "Sammy poked his nose out. Flicker flew toward the jungle, showing Sammy a path of light. Sammy took a deep breath and followed.",
-        "They found a friendly sleeping frog on a lily pad and a shy owl peeking from a tree. All the forest friends were calm and happy in the moonlight.",
-        "When Sammy returned home, he realized the dark was full of soft sounds and gentle lights, not monsters. He went to sleep, brave and peaceful."
-    ];
-    const mockPrompts = [
-        { page: 1, prompt: "A small, shy iguana named Sammy hiding under a large green blanket in a dark bedroom." },
-        { page: 2, prompt: "A tiny, bright firefly landing on a windowsill next to the blanket fort." },
-        { page: 3, prompt: "Sammy the iguana slowly following the firefly into a jungle path at night." },
-        { page: 4, prompt: "Sammy and the firefly looking at a sleeping frog on a giant lily pad." },
-        { page: 5, prompt: "Sammy back in his bed, happy and brave, with the moonlight shining through the window." },
-    ].slice(0, parseInt(pageCount)); // Limit pages based on front-end selection
+    prompts.push({ page: i, prompt: promptText });
+  }
 
-    // Success response
-    return res.json({
-        title: mockTitle,
-        tagline: mockTagline,
-        ageRange: ageRange,
-        paragraphs: mockParagraphs,
-        prompts: mockPrompts,
-        // The actual LLM-generated story would go here
-    });
+  const tagline = `A cozy story for ages ${safeAgeRange} about ${safeIdea.toLowerCase()}.`;
+
+  return res.json({
+    title: safeTitle,
+    tagline,
+    ageRange: safeAgeRange,
+    paragraphs,
+    prompts,
+  });
+});
 
     // To simulate a failure for frontend testing:
     // return res.status(500).json({ error: "LLM service failed." });
@@ -201,4 +227,5 @@ app.listen(PORT, () => {
 
 // NOTE: You will need to install dependencies:
 // npm install express body-parser node-fetch form-data
+
 
