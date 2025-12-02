@@ -108,38 +108,23 @@ app.post("/api/generate-book", async (req, res) => {
       pageCount,
     });
 
-      const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      temperature: 0.7,
+    // Use Responses API in JSON mode – very stable
+    const aiResponse = await openai.responses.create({
+      model: "gpt-4.1-mini",
+      input: prompt,
+      response_format: { type: "json_object" },
     });
 
-    let rawText = completion.choices?.[0]?.message?.content || "";
+    // This is the plain JSON string the model returned
+    let rawText = aiResponse.output_text || "";
     rawText = rawText.trim();
-
-    // Strip ```json ... ``` if the model wraps it
-    if (rawText.startsWith("```")) {
-      const firstNewline = rawText.indexOf("\n");
-      if (firstNewline !== -1) {
-        rawText = rawText.slice(firstNewline + 1);
-      }
-      if (rawText.endsWith("```")) {
-        rawText = rawText.slice(0, -3);
-      }
-      rawText = rawText.trim();
-    }
 
     let parsed;
     try {
       parsed = JSON.parse(rawText);
     } catch (err) {
       console.error("JSON parse error from model, raw text:\n", rawText);
-      // Fallback so UI still shows something
+      // Fallback so the UI still shows something
       parsed = {
         title: title || "Your Custom Story",
         tagline: "",
@@ -295,4 +280,3 @@ app.get("*", (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);
 });
-
