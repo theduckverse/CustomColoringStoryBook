@@ -272,11 +272,18 @@
     });
 
     try {
-      const res = await fetch("/api/generate-book", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, mainCharacter, storyIdea, ageRange, pageCount })
-      });
+   const titleVal = document.getElementById("title").value || lastBookData.title || "";
+const mainCharacterVal = document.getElementById("main-character").value || "";
+
+const res = await fetch("/api/generate-images", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    prompts: lastBookData.prompts,
+    title: titleVal,
+    mainCharacter: mainCharacterVal
+  })
+});
 
       const data = await res.json();
       renderBook(data);
