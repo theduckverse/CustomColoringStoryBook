@@ -1,433 +1,223 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Magic Story Colorbooks</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Magic Story Colorbooks</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 
-    <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            primary: "#ffbe57",
-            primaryDark: "#e0a645",
-            biscuit: "#fff7e6",
-          },
-          fontFamily: {
-            kids: ["Comic Sans MS", "Comic Neue", "Fredoka", "sans-serif"],
-          }
-        }
-      }
-    };
-  </script>
-
-  <style>
-    body {
-      background: #fff7e6;
-      font-family: "Comic Neue", "Comic Sans MS", sans-serif;
-    }
-    .shelf-highlight {
-      animation: shelfFlash 1.2s ease;
-    }
-    @keyframes shelfFlash {
-      0% { background: #ffe9b8; }
-      100% { background: transparent; }
-    }
-  </style>
+    <style>
+        body {
+            background: #fff7e6;
+            font-family: "Comic Sans MS", "Inter", sans-serif;
+        }
+        .card {
+            background: white;
+            border: 2px solid #f1d18a;
+            border-radius: 14px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            background: #f4b41a;
+            color: white;
+            font-weight: bold;
+            padding: 12px 20px;
+            border-radius: 10px;
+            display: block;
+            width: 100%;
+            text-align: center;
+            cursor: pointer;
+        }
+        .btn:disabled {
+            background: #f4b41a88;
+            cursor: not-allowed;
+        }
+        .label {
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+        .shelf-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 40px;
+            margin-bottom: 10px;
+        }
+        .preview-box {
+            width: 100%;
+            height: 220px;
+            background: #eee;
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+        }
+    </style>
 </head>
 
-<body class="min-h-screen">
+<body class="p-6">
 
-    <header class="w-full bg-white shadow py-4 px-4 flex items-center justify-between border-b border-yellow-200">
-    <div class="flex items-center gap-3">
-      <img src="/Scribbles.jpg" class="w-10 h-10 rounded-full shadow" />
-      <div>
-        <h1 class="text-xl font-bold text-yellow-800">Magic Story Colorbooks</h1>
-        <p class="text-xs text-yellow-700">
-          Help your child's imagination grow with custom story coloring books.
-        </p>
-      </div>
-    </div>
-    <button class="px-3 py-1 rounded-full text-xs bg-yellow-200 border border-yellow-400">
-      Parent dashboard (coming soon)
-    </button>
-  </header>
+    <h1 class="text-3xl font-bold mb-6">Magic Story Colorbooks</h1>
 
-  <main class="max-w-6xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <div class="grid md:grid-cols-2 gap-6">
 
-        <section>
-      <div class="bg-white rounded-2xl p-5 shadow border border-yellow-300">
-        <div class="flex gap-3 mb-4">
-          <img src="/Scribbles.jpg" class="w-12 h-12 rounded-full shadow" />
-          <div>
-            <h2 class="font-bold text-yellow-800">Hi, I’m Scribbles!</h2>
-            <p class="text-sm text-yellow-700">Tell me about your character and I’ll help make your story book.</p>
-          </div>
-          </div>
+        <!-- Left Side: Form -->
+        <div>
+            <div class="card">
+                <h2 class="text-xl font-bold mb-3">Hi, I’m Scribbles! 🎨</h2>
+                <p class="text-sm mb-4">Tell me about your character and I’ll help make your story book.</p>
 
-        <form id="book-form" class="space-y-4">
+                <label class="label">Book title</label>
+                <input id="title" class="w-full p-2 border rounded" placeholder="Mario the Dog" />
 
-          <div>
-            <label class="font-semibold text-yellow-800 text-sm">Book title</label>
-            <input id="title"
-                   class="w-full px-3 py-2 rounded-xl border border-yellow-300 bg-yellow-50"
-                   placeholder="Sammy the Brave Iguana" />
-          </div>
+                <label class="label mt-3">Main character</label>
+                <input id="mainCharacter" class="w-full p-2 border rounded" placeholder="Mario" />
 
-          <div>
-            <label class="font-semibold text-yellow-800 text-sm">Main character</label>
-            <input id="main-character"
-                   class="w-full px-3 py-2 rounded-xl border border-yellow-300 bg-yellow-50"
-                   placeholder="An iguana named Sammy who's afraid of the dark" />
-          </div>
+                <label class="label mt-3">What should the story be about?</label>
+                <textarea id="storyIdea" class="w-full p-2 border rounded h-28"></textarea>
 
-          <div>
-            <label class="font-semibold text-yellow-800 text-sm">What should the story be about?</label>
-            <textarea id="story-idea"
-                      rows="4"
-                      class="w-full px-3 py-2 rounded-xl border border-yellow-300 bg-yellow-50"
-                      placeholder="Sammy hides under the covers until forest friends and fireflies help him feel brave."></textarea>
-          </div>
+                <div class="grid grid-cols-2 gap-4 mt-4">
+                    <div>
+                        <label class="label">Age range</label>
+                        <select id="ageRange" class="w-full p-2 border rounded">
+                            <option>3–5 years</option>
+                            <option>5–7 years</option>
+                            <option>7–9 years</option>
+                        </select>
+                    </div>
 
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="font-semibold text-yellow-800 text-sm">Age range</label>
-              <select id="age-range"
-                      class="w-full px-3 py-2 rounded-xl border border-yellow-300 bg-yellow-50">
-                <option value="3-5">3–5 years</option>
-                <option value="5-7">5–7 years</option>
-                <option value="7-9">7–9 years</option>
-              </select>
-            </div>
+                    <div>
+                        <label class="label">Story length</label>
+                        <select id="pageCount" class="w-full p-2 border rounded">
+                            <option>8 pages</option>
+                            <option>12 pages</option>
+                            <option>16 pages</option>
+                        </select>
+                    </div>
+                </div>
 
-            <div>
-              <label class="font-semibold text-yellow-800 text-sm">Story length</label>
-              <select id="page-count"
-                      class="w-full px-3 py-2 rounded-xl border border-yellow-300 bg-yellow-50">
-                <option value="8">8 pages</option>
-                <option value="12">12 pages</option>
-                <option value="16">16 pages</option>
-              </select>
-            </div>
-          </div>
+                <button id="generateStoryBtn" class="btn mt-5">✨ Generate Book (1 credit)</button>
 
-          <button id="generate-btn"
-                  class="w-full py-3 rounded-xl bg-yellow-500 hover:bg-yellow-600 text-white font-bold shadow">
-            <span id="generate-btn-label">✨ Generate Book (1 credit)</span>
-            <span id="generate-btn-spinner" class="hidden">Thinking…</span>
-          </button>
+                <div id="errorBox" class="text-red-600 font-semibold mt-4 hidden">
+                    ❌ Error: Could not generate your book.
+                </div>
+            </div>
+        </div>
 
-          <button id="download-pdf-btn"
-                  disabled
-                  class="w-full py-3 rounded-xl bg-white text-yellow-700 border border-yellow-400 font-semibold disabled:opacity-40">
-            📄 Unlock & Download PDF (5 credits total)
-          </button>
+        <!-- Right Side: Story Output -->
+        <div>
+            <div id="storyBox" class="card hidden">
+                <h2 class="text-2xl font-bold" id="storyTitle"></h2>
+                <p class="text-sm italic" id="storyTagline"></p>
 
-          <button id="generate-images-btn"
-                  disabled
-                  class="w-full py-3 rounded-xl bg-white text-yellow-700 border border-yellow-400 font-semibold disabled:opacity-40">
-            🎨 Generate Coloring Page Previews
-          </button>
+                <div id="storyParagraphs" class="mt-4"></div>
+            </div>
 
-        </form>
-      </div>
-    </section>
+            <!-- Shelves -->
+            <div id="shelfTop" class="hidden">
+                <h3 class="shelf-title">Top shelf pages</h3>
+                <div id="topPages"></div>
+            </div>
 
-        <section>
-      <div class="space-y-6">
+            <div id="shelfBottom" class="hidden">
+                <h3 class="shelf-title">Bottom shelf pages</h3>
+                <div id="bottomPages"></div>
+            </div>
 
-                <div id="status-bar"
-             class="rounded-xl bg-yellow-50 border border-yellow-200 p-4">
-          <div class="flex gap-2">
-            <span id="status-icon">📚</span>
-            <div>
-              <p id="status-title" class="font-bold text-yellow-900">Ready to create a book.</p>
-              <p id="status-text" class="text-yellow-700 text-sm">
-                Enter your idea and click “Generate Book”.
-              </p>
-            </div>
-          </div>
-        </div>
-
-                <div id="story-card"
-             class="hidden bg-white rounded-2xl p-5 border border-yellow-300 shadow">
-          <h3 id="story-title" class="text-xl font-bold text-yellow-900"></h3>
-          <p id="story-tagline" class="text-sm text-yellow-700 mb-3"></p>
-          <div id="story-body" class="space-y-3 text-yellow-900"></div>
-        </div>
-
-                <div id="prompts-card"
-             class="hidden bg-white rounded-2xl p-5 border border-yellow-300 shadow">
-          <h3 class="text-xl font-bold text-yellow-900">Story pages</h3>
-          <ol id="prompts-list" class="mt-2 space-y-3 text-yellow-900"></ol>
-        </div>
-
-                <div id="images-card"
-             class="hidden bg-white rounded-2xl p-5 border border-yellow-300 shadow">
-          <h3 class="text-xl font-bold text-yellow-900">Coloring page previews</h3>
-          <p class="text-sm text-yellow-700 mb-2">Preview only</p>
-          <div id="images-grid" class="grid grid-cols-2 gap-4"></div>
-        </div>
-
-      </div>
-    </section>
-  </main>
-
-<script>
-  const form = document.getElementById("book-form");
-  const generateBtn = document.getElementById("generate-btn");
-  const generateBtnLabel = document.getElementById("generate-btn-label");
-  const generateBtnSpinner = document.getElementById("generate-btn-spinner");
-  const downloadBtn = document.getElementById("download-pdf-btn");
-  const imagesBtn = document.getElementById("generate-images-btn");
-
-  const statusIcon = document.getElementById("status-icon");
-  const statusTitle = document.getElementById("status-title");
-  const statusText = document.getElementById("status-text");
-
-  const storyCard = document.getElementById("story-card");
-  const storyTitleEl = document.getElementById("story-title");
-  const storyTaglineEl = document.getElementById("story-tagline");
-  const storyBodyEl = document.getElementById("story-body");
-
-  const promptsCard = document.getElementById("prompts-card");
-  const promptsList = document.getElementById("prompts-list");
-
-  const imagesCard = document.getElementById("images-card");
-  const imagesGrid = document.getElementById("images-grid");
-
-  let lastBookData = null;
-
-  function setStatus(obj) {
-    statusIcon.textContent = obj.icon;
-    statusTitle.textContent = obj.title;
-    statusText.textContent = obj.text;
-  }
-
-  function setLoading(isLoading) {
-    generateBtn.disabled = isLoading;
-    generateBtnSpinner.classList.toggle("hidden", !isLoading);
-    generateBtnLabel.textContent = isLoading ? "Generating…" : "✨ Generate Book (1 credit)";
-  }
-
-  function renderBook(data) {
-    storyTitleEl.textContent = data.title;
-    storyTaglineEl.textContent = data.tagline;
-
-    storyBodyEl.innerHTML = "";
-    data.paragraphs.forEach(p => {
-      const el = document.createElement("p");
-      el.textContent = p;
-      storyBodyEl.appendChild(el);
-    });
-
-    promptsList.innerHTML = "";
-    data.prompts.forEach(item => {
-      const li = document.createElement("li");
-      li.innerHTML = `<strong>Page ${item.page}:</strong> ${item.prompt}`;
-      promptsList.appendChild(li);
-    });
-
-    storyCard.classList.remove("hidden");
-    promptsCard.classList.remove("hidden");
-
-    lastBookData = data;
-    downloadBtn.disabled = false;
-    imagesBtn.disabled = false;
-
-    setStatus({
-      icon: "📖",
-      title: "Your storybook is ready!",
-      text: "Now you can generate coloring pages or download the PDF."
-    });
-  }
-
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const title = document.getElementById("title").value;
-    const mainCharacter = document.getElementById("main-character").value;
-    const storyIdea = document.getElementById("story-idea").value;
-    const ageRange = document.getElementById("age-range").value;
-    const pageCount = document.getElementById("page-count").value;
-
-    setLoading(true);
-    setStatus({
-      icon: "✨",
-      title: "Creating your storybook…",
-      text: "Scribbles is writing a cozy story."
-    });
-
-    try {
-      const res = await fetch("/api/generate-book", { // <-- CORRECTED: Changed to /api/generate-book
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title,
-          mainCharacter,
-          storyIdea,
-          ageRange,
-          pageCount,
-        })
-      });
-
-      if (!res.ok) {
-        // Improved error handling for server errors (like 400 or 500)
-        const errorData = await res.json();
-        throw new Error(errorData.error || "Server responded with an error status.");
-      }
-
-      const data = await res.json();
-      renderBook(data);
-
-    } catch (err) {
-      console.error("Book Generation Error:", err);
-      setStatus({
-        icon: "❌",
-        title: "Error",
-        text: err.message || "Could not generate your book."
-      });
-    }
-
-    setLoading(false);
-  });
+            <!-- Coloring previews -->
+            <div id="coloringPreviewSection" class="hidden">
+                <h3 class="shelf-title">Coloring page previews</h3>
+                <div id="coloringContainer" class="grid grid-cols-2 gap-4"></div>
+            </div>
+        </div>
+    </div>
 
 
-  imagesBtn.addEventListener("click", async () => {
-    if (!lastBookData) return;
+    <script>
+        const apiBase = "/api";
 
-    setStatus({
-      icon: "🎨",
-      title: "Making coloring pages…",
-      text: "Scribbles is drawing your line-art pages."
-    });
-
-    imagesBtn.disabled = true;
-
-    try {
-        // Need to pass mainCharacter and title for image consistency
-        const titleVal = document.getElementById("title").value || lastBookData.title || "";
-        const mainCharacterVal = document.getElementById("main-character").value || "";
-        
-      const res = await fetch("/api/generate-images", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-            prompts: lastBookData.prompts,
-            title: titleVal,
-            mainCharacter: mainCharacterVal
-        })
-      });
-
-      const raw = await res.json();
-      console.log("Raw image payload:", raw);
-
-      const normalized = (raw.images || raw.data || [])
-        .map((item, i) => {
-          let url = item.url || item.image_url;
-
-          if (!url && item.b64_json) {
-            url = `data:image/png;base64,${item.b64_json}`;
-          }
-
-          if (!url) return null;
-
-          return { page: item.page || i + 1, url };
-        })
-        .filter(Boolean);
-
-      console.log("Normalized:", normalized);
-
-      imagesGrid.innerHTML = "";
-      normalized.forEach(img => {
-        const div = document.createElement("div");
-        div.className = "border rounded-xl p-2 bg-yellow-50";
-        div.innerHTML = `
-          <img src="${img.url}" class="w-full rounded mb-2 shadow" />
-          <p class="text-center text-sm">Page ${img.page}</p>
-        `;
-        imagesGrid.appendChild(div);
-      });
-
-      imagesCard.classList.remove("hidden");
-
-      setStatus({
-        icon: "🎉",
-        title: "Coloring pages ready!",
-        text: "Scroll down to see your preview pages."
-      });
-
-    } catch (err) {
-      console.error(err);
-      setStatus({
-        icon: "❌",
-        title: "Image generation failed",
-        text: "Try again or check the server."
-      });
-    }
-
-    imagesBtn.disabled = false;
-  });
-  
-  
-    downloadBtn.addEventListener("click", async () => {
-    if (!lastBookData) return;
-
-    setStatus({
-        icon: "📄",
-        title: "Generating PDF...",
-        text: "Your file is being prepared."
-    });
-
-    try {
-        const res = await fetch("/api/export-pdf", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            // Send the entire book data to the PDF endpoint
-            body: JSON.stringify(lastBookData),
-        });
-
-        if (!res.ok) {
-            throw new Error("Failed to create PDF file on the server.");
+        function el(id) {
+            return document.getElementById(id);
         }
 
-        // The response is a file stream (PDF), so we treat it as a blob
-        const blob = await res.blob();
-        
-        // Use the file saver trick to trigger a download
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        
-        // Use the book title to name the file
-        const filename = (lastBookData.title || "custom_storybook").replace(/[^a-z0-9\-]/gi, "_").toLowerCase() + ".pdf";
-        a.download = filename;
-        
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
+        const btn = el("generateStoryBtn");
+        const errorBox = el("errorBox");
 
 
-        setStatus({
-            icon: "🎉",
-            title: "PDF Downloaded!",
-            text: "Check your downloads folder for the PDF."
-        });
+        // Main Event
+        btn.onclick = async () => {
+            errorBox.classList.add("hidden");
 
-    } catch (err) {
-        console.error("PDF Export Error:", err);
-        setStatus({
-            icon: "❌",
-            title: "PDF Export Failed",
-            text: err.message || "Could not generate or download the PDF."
-        });
-    }
-});
-</script>
+            const payload = {
+                title: el("title").value,
+                mainCharacter: el("mainCharacter").value,
+                storyIdea: el("storyIdea").value,
+                ageRange: el("ageRange").value,
+                pageCount: el("pageCount").value,
+            };
+
+            btn.disabled = true;
+            btn.textContent = "⏳ Creating your story...";
+
+            try {
+                const res = await fetch(`${apiBase}/generate-book`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                });
+
+                if (!res.ok) throw new Error("Server failed");
+
+                const data = await res.json();
+                displayStory(data);
+
+            } catch (err) {
+                errorBox.classList.remove("hidden");
+            }
+
+            btn.disabled = false;
+            btn.textContent = "✨ Generate Book (1 credit)";
+        };
+
+
+        // Render story + shelves
+        function displayStory(data) {
+            el("storyBox").classList.remove("hidden");
+            el("storyTitle").textContent = data.title || "";
+            el("storyTagline").textContent = data.tagline || "";
+
+            const pWrap = el("storyParagraphs");
+            pWrap.innerHTML = "";
+
+            data.paragraphs.forEach(p => {
+                const div = document.createElement("p");
+                div.className = "mb-3";
+                div.textContent = p;
+                pWrap.appendChild(div);
+            });
+
+            // Top shelf = first half
+            const half = Math.ceil(data.prompts.length / 2);
+            renderShelf(el("topPages"), data.prompts.slice(0, half));
+            el("shelfTop").classList.remove("hidden");
+
+            // Bottom shelf = second half
+            renderShelf(el("bottomPages"), data.prompts.slice(half));
+            el("shelfBottom").classList.remove("hidden");
+        }
+
+        function renderShelf(container, prompts) {
+            container.innerHTML = "";
+            prompts.forEach((prompt, i) => {
+                const c = document.createElement("div");
+                c.className = "card";
+
+                c.innerHTML = `
+                    <div class="font-bold">Page ${i + 1}</div>
+                    <p class="text-sm mt-1">${prompt}</p>
+                `;
+                container.appendChild(c);
+            });
+        }
+    </script>
 
 </body>
 </html>
