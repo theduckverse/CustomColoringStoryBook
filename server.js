@@ -6,34 +6,33 @@ const bodyParser = require("body-parser");
 const fetch = require("node-fetch"); // Required for fetch in older Node environments
 const FormData = require("form-data"); // Required for multipart/form-data requests
 const OpenAI = require("openai");
+
+// OpenAI client
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY, // make sure this is set in Render
+  apiKey: process.env.OPENAI_API_KEY, // must be set in Render
 });
-// Note: In modern Node.js versions (v18+), global fetch and FormData may be available.
-// If using older Node, ensure you 'npm install node-fetch form-data'
 
 const app = express();
 const PORT = 3000; // Choose your desired port
 
 // 2. Middleware
-// Use body-parser to handle incoming JSON data
 app.use(bodyParser.json());
 // Serve static files (like your index.html, Scribbles.jpg, etc.)
 app.use(express.static("public"));
 
 // 3. Environment Variables (Stability AI Key)
-// Use process.env to load secrets from a .env file (if using dotenv) or environment
 const STABILITY_API_KEY = process.env.STABILITY_API_KEY;
 
 if (!STABILITY_API_KEY) {
-  console.warn("⚠️ STABILITY_API_KEY is not set. /api/generate-images will fail.");
+  console.warn(
+    "⚠️ STABILITY_API_KEY is not set. /api/generate-images will fail."
+  );
 }
 
 // =================================================================
 // 4. API Routes
 // =================================================================
 
-// --- API: Generate Book (Template-Based Custom Story) ---
 // --- API: Generate Book (OpenAI-powered) ---
 app.post("/api/generate-book", async (req, res) => {
   const { title, mainCharacter, storyIdea, ageRange, pageCount } = req.body;
@@ -57,7 +56,6 @@ app.post("/api/generate-book", async (req, res) => {
   const numPages =
     isNaN(numPagesRaw) ? 8 : Math.max(4, Math.min(numPagesRaw, 16));
 
-  // Build prompt for OpenAI
   const systemPrompt = `
 You write cozy, gentle children's storybooks that can be turned into coloring books.
 
@@ -95,7 +93,7 @@ Make the story reassuring and hopeful. The character faces this challenge but gr
 
   try {
     const completion = await openai.chat.completions.create({
-      model: "gpt-4.1-mini", // or another model you prefer
+      model: "gpt-4.1-mini", // you can change to another OpenAI model if you want
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: systemPrompt },
@@ -142,7 +140,7 @@ Make the story reassuring and hopeful. The character faces this challenge but gr
   } catch (err) {
     console.error("OpenAI /api/generate-book error:", err);
 
-    // Fallback: simple template so the UI still works if AI fails
+    // Fallback so the UI still works if AI fails
     const fallbackParagraphs = [
       `${safeCharacter} has a big imagination, but lately something has been on their mind: ${safeIdea}. Every day, that feeling seems a little bit bigger and a little harder to ignore.`,
       `One day, ${safeCharacter} decides something has to change. They take a deep breath and wonder if there might be a new, braver way to move through the day.`,
@@ -173,28 +171,14 @@ Make the story reassuring and hopeful. The character faces this challenge but gr
   }
 });
 
-  // If you ever want to simulate a failure for frontend testing, you could
-  // comment out the res.json above and use:
-  // return res.status(500).json({ error: "LLM service failed." });
-});
-
 // --- API: Export PDF (Placeholder) ---
-// This endpoint would use a PDF generation library (like pdfkit or Puppeteer)
-// to compile the story text and coloring pages into a downloadable PDF file.
 app.post("/api/export-pdf", async (req, res) => {
-  // const bookData = req.body; // Contains story and prompts
-
-  // You must use a library like 'pdfkit' or a serverless function that wraps Puppeteer/Headless Chrome
-  // to correctly generate a PDF from the content. This cannot be done easily with just Express.
-
-  // --- MOCK PDF response for successful download trigger ---
   const mockPdfContent = "This is a placeholder PDF file content.";
   res.setHeader("Content-Type", "application/pdf");
   res.setHeader(
     "Content-Disposition",
     'attachment; filename="custom-story.pdf"'
   );
-  // Return a dummy buffer/data to make the frontend download link work
   res.send(Buffer.from(mockPdfContent, "utf-8"));
 });
 
@@ -233,10 +217,7 @@ app.post("/api/generate-images", async (req, res) => {
         basePrompt = rawItem.prompt || rawItem.description || "";
       }
 
-      if (!basePrompt) {
-        // Skip empty prompts
-        continue;
-      }
+      if (!basePrompt) continue;
 
       const fullPrompt = `
 ${basePrompt}
@@ -304,7 +285,3 @@ app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
   console.log("Serving static files from the 'public' directory.");
 });
-
-// NOTE: You will need to install dependencies:
-// npm install express body-parser node-fetch form-data
-
