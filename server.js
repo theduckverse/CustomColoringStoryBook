@@ -214,7 +214,13 @@ app.post("/api/export-pdf", async (req, res) => {
   }
 });
 
-// --- API: Generate coloring-page images with OpenAI ---
+// --- API: Generate coloring-page images with Stability AI (Stable Diffusion) ---
+const STABILITY_API_KEY = process.env.STABILITY_API_KEY;
+
+if (!STABILITY_API_KEY) {
+  console.warn("⚠️ STABILITY_API_KEY is not set. /api/generate-images will fail.");
+}
+
 app.post("/api/generate-images", async (req, res) => {
   const { prompts } = req.body || {};
 
@@ -222,8 +228,15 @@ app.post("/api/generate-images", async (req, res) => {
     return res.status(400).json({ error: "No prompts provided." });
   }
 
-  // safety cap so nobody asks for 100 pages at once
+  // Safety: don’t let someone request 100 pages at once
   const maxImages = Math.min(prompts.length, 8);
+
+  if (!STABILITY_API_KEY) {
+    return res.status(500).json({
+      error: "Image generation not configured.",
+      details: "Missing STABILITY_API_KEY on the server.",
+    });
+  }
 
   try {
     const images = [];
@@ -235,42 +248,62 @@ app.post("/api/generate-images", async (req, res) => {
 
       const fullPrompt = `
 ${basePrompt}
-Black and white line-art coloring page for young children.
-Thick outlines, no shading, simple background, kid-friendly.
+Black-and-white line-art coloring page for young children.
+Thick outlines, no shading, simple background, kid-friendly, clean coloring-book style.
       `.trim();
 
-      const response = await openai.images.generate({
-        model: "gpt-image-1",
-        prompt: fullPrompt,
-        n: 1,
-        size: "1024x1024"
-        // ❌ no response_format here – your API version doesn't support it
-      });
+      // Build multipart/form-data payload
+      const form = new FormData();
+      form.append("prompt", fullPrompt);
+      form.append("output_format", "png");
+      form.append("aspect_ratio", "1:1");
+      // Optional: push it toward line-art style
+      // Only works on some models, but harmless if ignored
+      form.append("model", "stable-image-core");
 
-      console.log(
-        "Image API raw response for page",
-        page,
-        JSON.stringify(response, null, 2)
+      const response = await fetch(
+        "https://api.stability.ai/v2beta/stable-image/generate/core",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${STABILITY_API_KEY}`,
+            Accept: "image/*",
+          },
+          body: form,
+        }
       );
 
-      const url = response.data?.[0]?.url;
-      if (!url) {
-        console.error("No URL returned for page", page);
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error(
+          `Stability image error for page ${page}:`,
+          response.status,
+          errText
+        );
+        // Skip this page, continue with others
         continue;
       }
 
-      images.push({ page, url });
+      const arrayBuffer = await response.arrayBuffer();
+      const base64 = Buffer.from(arrayBuffer).toString("base64");
+      const dataUrl = `data:image/png;base64,${base64}`;
+
+      images.push({ page, url: dataUrl });
+    }
+
+    if (images.length === 0) {
+      return res.status(500).json({
+        error: "No images could be generated.",
+        details: "Check server logs for Stability AI response errors.",
+      });
     }
 
     return res.json({ images });
   } catch (err) {
-    console.error(
-      "Error generating images:",
-      err?.response?.data || err?.message || err
-    );
+    console.error("Error in /api/generate-images (Stability):", err);
     return res.status(500).json({
-      error: "Image generation failed",
-      details: err?.response?.data || err?.message || String(err),
+      error: "Failed to generate images.",
+      details: err?.message || String(err),
     });
   }
 });
@@ -284,6 +317,7 @@ app.get("*", (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);
 });
+
 
 
 
