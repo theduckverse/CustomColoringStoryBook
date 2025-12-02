@@ -1,10 +1,10 @@
 // server.js - Complete Server Setup
 
 // 1. Core Imports
-const express = require('express');
-const bodyParser = require('body-parser');
-const fetch = require('node-fetch'); // Required for fetch in older Node environments
-const FormData = require('form-data'); // Required for multipart/form-data requests
+const express = require("express");
+const bodyParser = require("body-parser");
+const fetch = require("node-fetch"); // Required for fetch in older Node environments
+const FormData = require("form-data"); // Required for multipart/form-data requests
 // Note: In modern Node.js versions (v18+), global fetch and FormData may be available.
 // If using older Node, ensure you 'npm install node-fetch form-data'
 
@@ -15,14 +15,14 @@ const PORT = 3000; // Choose your desired port
 // Use body-parser to handle incoming JSON data
 app.use(bodyParser.json());
 // Serve static files (like your index.html, Scribbles.jpg, etc.)
-app.use(express.static('public'));
+app.use(express.static("public"));
 
 // 3. Environment Variables (Stability AI Key)
 // Use process.env to load secrets from a .env file (if using dotenv) or environment
 const STABILITY_API_KEY = process.env.STABILITY_API_KEY;
 
 if (!STABILITY_API_KEY) {
-    console.warn("⚠️ STABILITY_API_KEY is not set. /api/generate-images will fail.");
+  console.warn("⚠️ STABILITY_API_KEY is not set. /api/generate-images will fail.");
 }
 
 // =================================================================
@@ -93,27 +93,30 @@ app.post("/api/generate-book", async (req, res) => {
     paragraphs,
     prompts,
   });
-});
 
-    // To simulate a failure for frontend testing:
-    // return res.status(500).json({ error: "LLM service failed." });
+  // If you ever want to simulate a failure for frontend testing, you could
+  // comment out the res.json above and use:
+  // return res.status(500).json({ error: "LLM service failed." });
 });
 
 // --- API: Export PDF (Placeholder) ---
 // This endpoint would use a PDF generation library (like pdfkit or Puppeteer)
 // to compile the story text and coloring pages into a downloadable PDF file.
 app.post("/api/export-pdf", async (req, res) => {
-    // const bookData = req.body; // Contains story and prompts
+  // const bookData = req.body; // Contains story and prompts
 
-    // You must use a library like 'pdfkit' or a serverless function that wraps Puppeteer/Headless Chrome
-    // to correctly generate a PDF from the content. This cannot be done easily with just Express.
+  // You must use a library like 'pdfkit' or a serverless function that wraps Puppeteer/Headless Chrome
+  // to correctly generate a PDF from the content. This cannot be done easily with just Express.
 
-    // --- MOCK PDF response for successful download trigger ---
-    const mockPdfContent = "This is a placeholder PDF file content.";
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'attachment; filename="custom-story.pdf"');
-    // Return a dummy buffer/data to make the frontend download link work
-    res.send(Buffer.from(mockPdfContent, 'utf-8'));
+  // --- MOCK PDF response for successful download trigger ---
+  const mockPdfContent = "This is a placeholder PDF file content.";
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader(
+    "Content-Disposition",
+    'attachment; filename="custom-story.pdf"'
+  );
+  // Return a dummy buffer/data to make the frontend download link work
+  res.send(Buffer.from(mockPdfContent, "utf-8"));
 });
 
 // --- API: Generate coloring-page images with Stability AI (Stable Diffusion) ---
@@ -148,10 +151,7 @@ app.post("/api/generate-images", async (req, res) => {
         basePrompt = rawItem;
       } else if (rawItem && typeof rawItem === "object") {
         page = rawItem.page || page;
-        basePrompt =
-          rawItem.prompt ||
-          rawItem.description ||
-          "";
+        basePrompt = rawItem.prompt || rawItem.description || "";
       }
 
       if (!basePrompt) {
@@ -219,13 +219,12 @@ Thick outlines, no shading, simple background, kid-friendly, clean coloring-book
     });
   }
 });
+
 // 5. Start the Server
 app.listen(PORT, () => {
-    console.log(`🚀 Server running at http://localhost:${PORT}`);
-    console.log("Serving static files from the 'public' directory.");
+  console.log(`🚀 Server running at http://localhost:${PORT}`);
+  console.log("Serving static files from the 'public' directory.");
 });
 
 // NOTE: You will need to install dependencies:
 // npm install express body-parser node-fetch form-data
-
-
