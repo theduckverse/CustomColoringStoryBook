@@ -723,11 +723,17 @@
   const pagesGridTop = document.getElementById("pages-grid-top");
   const pagesGridBottom = document.getElementById("pages-grid-bottom");
 
-  const imagesCard = document.getElementById("images-card");
+    const imagesCard = document.getElementById("images-card");
   const imagesGrid = document.getElementById("images-grid");
 
   let lastBookData = null;
-  let lastFormInputs = null;
+  let lastFormInputs = {
+    title: "",
+    mainCharacter: "",
+    storyIdea: "",
+    ageRange: "",
+    pageCount: ""
+  };
 
   // =================== STATUS + LOADING ===================
   function setLoading(isLoading, labelWhenReady = "✨ Generate Book (1 credit)") {
@@ -899,6 +905,9 @@
     const storyIdea = document.getElementById("story-idea").value;
     const ageRange = document.getElementById("age-range").value;
     const pageCount = document.getElementById("page-count").value;
+    
+    // remember what was typed so we can use it for image prompts
+    lastFormInputs = { title, mainCharacter, storyIdea, ageRange, pageCount };
 
     // remember inputs for image prompts
     lastFormInputs = { title, mainCharacter, storyIdea, ageRange, pageCount };
