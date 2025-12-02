@@ -402,7 +402,9 @@
 
   function updateCreditsDisplay() {
     const pill = document.getElementById("credits-pill");
-    if (pill) pill.textContent = `Crayon Credits: ${credits}`;
+    if (pill) {
+      pill.textContent = `Crayon Credits: ${credits}`;
+    }
   }
 
   // =================== DOM ELEMENTS ===================
@@ -556,14 +558,14 @@
     imagesGrid.innerHTML = "";
 
     images.forEach((img) => {
-      if (!img || !img.url) return; // 👈 skip bad entries
+      if (!img || !img.url) return; // skip bad entries
 
       const wrapper = document.createElement("figure");
       wrapper.className =
         "bg-[#FFFBEB] rounded-xl border border-amber-200 overflow-hidden flex flex-col";
 
       const imageEl = document.createElement("img");
-      // add a cache-buster so mobile doesn’t reuse an empty/cached response
+      // cache-buster so mobile doesn’t reuse an empty response
       imageEl.src = img.url + (img.url.includes("?") ? "&" : "?") + "t=" + Date.now();
       imageEl.alt = `Coloring page ${img.page}`;
       imageEl.loading = "lazy";
