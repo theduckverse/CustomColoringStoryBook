@@ -5,6 +5,10 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const fetch = require("node-fetch"); // Required for fetch in older Node environments
 const FormData = require("form-data"); // Required for multipart/form-data requests
+const OpenAI = require("openai");
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY, // make sure this is set in Render
+});
 // Note: In modern Node.js versions (v18+), global fetch and FormData may be available.
 // If using older Node, ensure you 'npm install node-fetch form-data'
 
@@ -30,6 +34,7 @@ if (!STABILITY_API_KEY) {
 // =================================================================
 
 // --- API: Generate Book (Template-Based Custom Story) ---
+// --- API: Generate Book (OpenAI-powered) ---
 app.post("/api/generate-book", async (req, res) => {
   const { title, mainCharacter, storyIdea, ageRange, pageCount } = req.body;
 
@@ -47,52 +52,126 @@ app.post("/api/generate-book", async (req, res) => {
       ? mainCharacter.trim()
       : "a brave little hero";
   const safeIdea = storyIdea.trim();
-  const safeAgeRange = ageRange || "kids";
-
+  const safeAgeRange = ageRange || "3-5";
   const numPagesRaw = parseInt(pageCount, 10);
   const numPages =
     isNaN(numPagesRaw) ? 8 : Math.max(4, Math.min(numPagesRaw, 16));
 
-  // --- Simple template-based paragraphs using your inputs ---
-  const paragraphs = [
-    `${safeCharacter} has a big imagination, but lately something has been on their mind: ${safeIdea}. Every day, it feels a little bit bigger and a little bit harder to ignore.`,
-    `One day, ${safeCharacter} decides something has to change. They take a deep breath, look around, and wonder if maybe there is more help and magic waiting just outside their comfort zone.`,
-    `As the adventure begins, ${safeCharacter} meets new friends and discovers small, brave steps they can take. Each step makes the problem feel just a tiny bit smaller and their heart a lot more confident.`,
-    `Along the way, ${safeCharacter} learns that it's okay to feel nervous and it's okay to ask for help. The journey shows them that they are never really alone, even when things seem scary or confusing.`,
-    `By the end of the adventure, ${safeCharacter} realizes that ${safeIdea.toLowerCase()} doesn’t have to be a scary thing anymore. They feel proud, calm, and ready for the next cozy adventure.`,
-  ];
+  // Build prompt for OpenAI
+  const systemPrompt = `
+You write cozy, gentle children's storybooks that can be turned into coloring books.
 
-  // --- Build picture prompts for each page, tied to THIS story ---
-  const prompts = [];
-  for (let i = 1; i <= numPages; i++) {
-    let promptText = "";
+Return ONLY valid JSON, no extra text, in this exact format:
+{
+  "title": string,
+  "tagline": string,
+  "ageRange": string,
+  "paragraphs": string[],
+  "prompts": [
+    { "page": number, "prompt": string }
+  ]
+}
 
-    if (i === 1) {
-      promptText = `${safeCharacter} looking thoughtful in a cozy room, thinking about: ${safeIdea}.`;
-    } else if (i === 2) {
-      promptText = `${safeCharacter} taking a brave first step on their new adventure related to: ${safeIdea}.`;
-    } else if (i === 3) {
-      promptText = `${safeCharacter} meeting a friendly helper or guide who makes them feel safer and more confident.`;
-    } else if (i === 4) {
-      promptText = `${safeCharacter} practicing a small, brave action that helps them with ${safeIdea.toLowerCase()}.`;
-    } else if (i === numPages) {
-      promptText = `${safeCharacter} feeling proud and calm at the end of the story, showing how they have grown and found courage.`;
-    } else {
-      promptText = `${safeCharacter} in a gentle scene that continues their adventure about ${safeIdea.toLowerCase()}, looking curious and hopeful.`;
+Rules:
+- Reading level: around the given age range (simple sentences, warm tone).
+- 4–8 short paragraphs total (2–4 sentences each).
+- The story should center on the main character and their situation.
+- "prompts" should describe what to draw on each page as a black-and-white coloring page.
+- Each prompt must mention the main character by name and describe a clear scene.
+- Use page numbers from 1 to pageCount.
+`;
+
+  const userPrompt = `
+Create a children's story and illustration prompts for a custom coloring book.
+
+Title: "${safeTitle}"
+Main character: "${safeCharacter}"
+Story idea: "${safeIdea}"
+Age range: "${safeAgeRange}"
+Number of pages: ${numPages}
+
+Make the story reassuring and hopeful. The character faces this challenge but grows braver and more confident by the end.
+`;
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4.1-mini", // or another model you prefer
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+    });
+
+    const content = completion.choices[0]?.message?.content;
+    if (!content) {
+      throw new Error("No content returned from OpenAI");
     }
 
-    prompts.push({ page: i, prompt: promptText });
+    let book;
+    try {
+      book = JSON.parse(content);
+    } catch (parseErr) {
+      console.error("JSON parse error from OpenAI:", parseErr, content);
+      return res
+        .status(500)
+        .json({ error: "Failed to parse story from AI response." });
+    }
+
+    // Light safety checks / normalization
+    if (!Array.isArray(book.paragraphs)) book.paragraphs = [];
+    if (!Array.isArray(book.prompts)) book.prompts = [];
+
+    // Ensure page numbers from 1..numPages
+    book.prompts = book.prompts
+      .slice(0, numPages)
+      .map((p, idx) => ({
+        page: typeof p.page === "number" ? p.page : idx + 1,
+        prompt: p.prompt || "",
+      }))
+      .filter((p) => p.prompt && typeof p.prompt === "string");
+
+    // Fill in any missing metadata
+    book.title = book.title || safeTitle;
+    book.tagline =
+      book.tagline ||
+      `A cozy story for ages ${safeAgeRange} about ${safeIdea.toLowerCase()}.`;
+    book.ageRange = book.ageRange || safeAgeRange;
+
+    return res.json(book);
+  } catch (err) {
+    console.error("OpenAI /api/generate-book error:", err);
+
+    // Fallback: simple template so the UI still works if AI fails
+    const fallbackParagraphs = [
+      `${safeCharacter} has a big imagination, but lately something has been on their mind: ${safeIdea}. Every day, that feeling seems a little bit bigger and a little harder to ignore.`,
+      `One day, ${safeCharacter} decides something has to change. They take a deep breath and wonder if there might be a new, braver way to move through the day.`,
+      `As the adventure begins, ${safeCharacter} meets new friends and discovers small, brave steps they can take. Each tiny step makes the big feeling a little smaller.`,
+      `By the end of the adventure, ${safeCharacter} realizes that the worry that once felt huge now feels lighter. They feel proud, calm, and ready for the next cozy adventure.`,
+    ];
+
+    const fallbackPrompts = [];
+    for (let i = 1; i <= numPages; i++) {
+      let promptText = "";
+      if (i === 1) {
+        promptText = `${safeCharacter} in a cozy room, thinking about the big problem on their mind: ${safeIdea}.`;
+      } else if (i === numPages) {
+        promptText = `${safeCharacter} feeling proud and calm at the end of the story, showing how much braver they have become.`;
+      } else {
+        promptText = `${safeCharacter} on their gentle adventure, taking small brave steps and meeting kind helpers.`;
+      }
+      fallbackPrompts.push({ page: i, prompt: promptText });
+    }
+
+    return res.json({
+      title: safeTitle,
+      tagline: `A cozy story for ages ${safeAgeRange} about ${safeIdea.toLowerCase()}.`,
+      ageRange: safeAgeRange,
+      paragraphs: fallbackParagraphs,
+      prompts: fallbackPrompts,
+    });
   }
-
-  const tagline = `A cozy story for ages ${safeAgeRange} about ${safeIdea.toLowerCase()}.`;
-
-  return res.json({
-    title: safeTitle,
-    tagline,
-    ageRange: safeAgeRange,
-    paragraphs,
-    prompts,
-  });
+});
 
   // If you ever want to simulate a failure for frontend testing, you could
   // comment out the res.json above and use:
@@ -228,3 +307,4 @@ app.listen(PORT, () => {
 
 // NOTE: You will need to install dependencies:
 // npm install express body-parser node-fetch form-data
+
