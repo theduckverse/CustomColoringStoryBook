@@ -12,386 +12,6 @@
       theme: {
         extend: {
           colors: {
-            primary: "#4DA3FF",
-            primaryDark: "#1E88E5",
-            accentYellow: "#FFC94A",
-            accentRed: "#FF6B6B",
-            accentGreen: "#6BCB77",
-            accentPurple: "#A97FFF",
-            bgLight: "#FFF9EB",
-            wood: "#D8A25E",
-            woodDark: "#B17839"
-          },
-          borderRadius: {
-            xl: "1rem",
-            "2xl": "1.5rem",
-          },
-          boxShadow: {
-            soft: "0 8px 20px rgba(15,23,42,0.08)",
-            heavy: "0 18px 40px rgba(15,23,42,0.18)"
-          },
-          fontFamily: {
-            fun: ["\"Comic Sans MS\"", "Poppins", "system-ui", "sans-serif"]
-          },
-          keyframes: {
-            scribbleBounce: {
-              "0%, 100%": { transform: "translateY(0)" },
-              "50%": { transform: "translateY(-4px)" }
-            },
-            scribbleWiggle: {
-              "0%, 100%": { transform: "rotate(0deg)" },
-              "25%": { transform: "rotate(-5deg)" },
-              "75%": { transform: "rotate(5deg)" }
-            }
-          },
-          animation: {
-            "scribble-bounce": "scribbleBounce 2.2s ease-in-out infinite",
-            "scribble-wiggle": "scribbleWiggle 0.8s ease-in-out"
-          }
-        }
-      }
-    };
-  </script>
-  <style>
-    .shelf-highlight {
-      box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.9);
-      border-radius: 1.5rem;
-      transition: box-shadow 0.3s ease;
-    }
-  </style>
-</head>
-<body class="min-h-screen bg-bgLight text-slate-800 font-fun">
-<div class="min-h-screen">
-  <!-- HEADER -->
-  <header class="border-b border-wood/40 bg-white shadow-soft">
-    <div class="max-w-5xl mx-auto px-4 pt-4 pb-2 flex items-center gap-4">
-      <!-- Scribbles mascot -->
-      <div class="relative flex items-center">
-        <div class="w-14 h-14 rounded-2xl bg-amber-200 border-4 border-amber-300 overflow-hidden shadow-soft flex items-center justify-center animate-scribble-bounce">
-          <img
-            src="/Scribbles.jpg"
-            alt="Scribbles the Crayon"
-            class="w-full h-full object-cover"
-          />
-        </div>
-      </div>
-      <div class="flex-1">
-        <h1 class="text-2xl font-bold tracking-tight text-amber-900">
-          Magic Story Colorbooks
-        </h1>
-        <p class="text-xs text-amber-800/80">
-          Help your child’s imagination and reading grow with custom story coloring books.
-        </p>
-      </div>
-      <div class="hidden md:flex flex-col items-end gap-1 text-[11px]">
-        <span class="text-amber-900 font-semibold">Grown-up area</span>
-        <button class="px-3 py-1 rounded-full border border-amber-300 text-[11px] text-amber-900 bg-amber-100 hover:bg-amber-200 shadow-soft">
-          Parent dashboard (coming soon)
-        </button>
-        <!-- Credits pill -->
-        <div
-          id="credits-pill"
-          class="mt-1 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 font-semibold"
-        >
-          Crayon Credits: 10
-        </div>
-      </div>
-    </div>
-
-    <!-- Tabs / Nav -->
-    <nav class="max-w-5xl mx-auto px-4 pb-3">
-      <div class="flex flex-wrap gap-2 text-xs font-semibold">
-        <button id="nav-home" class="px-4 py-1.5 rounded-full bg-primary text-white shadow-soft">
-          Home
-        </button>
-        <button id="nav-reading" class="px-4 py-1.5 rounded-full bg-accentRed text-white shadow-soft">
-          Get reading
-        </button>
-        <button id="nav-make" class="px-4 py-1.5 rounded-full bg-accentYellow text-amber-900 shadow-soft">
-          Make a book
-        </button>
-        <button id="nav-fun" class="px-4 py-1.5 rounded-full bg-accentGreen text-white shadow-soft">
-          Fun ideas
-        </button>
-        <button id="nav-shelf" class="px-4 py-1.5 rounded-full bg-accentPurple text-white shadow-soft">
-          My shelf
-        </button>
-      </div>
-    </nav>
-  </header>
-
-  <main class="max-w-5xl mx-auto px-4 py-6 lg:py-8 flex flex-col lg:flex-row gap-8">
-    <!-- LEFT: FORM -->
-    <section id="make-book-section" class="w-full lg:w-[40%]">
-      <div class="bg-white rounded-2xl border border-amber-200 shadow-heavy p-5 relative overflow-hidden">
-        <div class="pointer-events-none absolute -top-10 -right-8 w-32 h-32 rounded-full bg-[#FEF3C7]/80 blur-xl"></div>
-        <div class="pointer-events-none absolute -bottom-10 -left-10 w-32 h-32 rounded-full bg-[#DBEAFE]/80 blur-xl"></div>
-
-        <div class="relative space-y-4">
-          <!-- Scribbles intro bubble -->
-          <div class="bg-white rounded-2xl border border-amber-200 shadow-soft p-3 flex items-center gap-3 group">
-            <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center border border-amber-200 overflow-hidden">
-              <img
-                src="/Scribbles.jpg"
-                alt="Scribbles the Crayon"
-                class="w-full h-full object-cover group-hover:animate-scribble-wiggle"
-              />
-            </div>
-            <div class="text-xs">
-              <p class="font-semibold text-amber-900">Hi, I’m Scribbles!</p>
-              <p class="text-amber-800/80">
-                Tell me about your character and I’ll help you make a story coloring book for the shelf.
-              </p>
-            </div>
-          </div>
-
-          <h2 class="text-xl font-bold mb-1 flex items-center gap-2 text-amber-900">
-            ✏️ Describe your book
-          </h2>
-          <p class="text-sm text-amber-800/80 mb-2">
-            Example: “An iguana named Sammy who’s afraid of the dark and learns to be brave at night.”
-          </p>
-
-          <form id="book-form" class="space-y-4">
-            <div>
-              <label class="text-xs font-semibold text-amber-900 flex justify-between mb-1.5">
-                <span>Book title</span>
-                <span class="text-amber-700/70">Optional</span>
-              </label>
-              <input
-                id="title"
-                type="text"
-                placeholder="Sammy the Brave Iguana"
-                class="w-full text-sm px-3.5 py-2.5 rounded-2xl bg-[#FFFBEB] border border-amber-200 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 placeholder:text-amber-600/80" />
-            </div>
-
-            <div>
-              <label class="text-xs font-semibold text-amber-900 mb-1.5 block">
-                🖍️ Main character
-              </label>
-              <input
-                id="main-character"
-                type="text"
-                placeholder="An iguana named Sammy who's afraid of the dark"
-                class="w-full text-sm px-3.5 py-2.5 rounded-2xl bg-[#FFFBEB] border border-amber-200 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 placeholder:text-amber-600/80" />
-            </div>
-
-            <div>
-              <label class="text-xs font-semibold text-amber-900 mb-1.5 block">
-                🌟 What should the story be about?
-              </label>
-              <textarea
-                id="story-idea"
-                rows="4"
-                placeholder="Sammy hides under the covers at night until forest friends and glowing fireflies help him feel safe."
-                class="w-full text-sm px-3.5 py-2.5 rounded-2xl bg-[#FFFBEB] border border-amber-200 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 placeholder:text-amber-600/80 resize-none"></textarea>
-              <p class="mt-1 text-[11px] text-amber-800/80">
-                The app turns this into a cosy kids’ story with matching coloring pages laid out like a real book.
-              </p>
-            </div>
-
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="text-xs font-semibold text-amber-900 mb-1.5 block">
-                  🎂 Age range
-                </label>
-                <select id="age-range"
-                        class="w-full text-sm px-3.5 py-2.5 rounded-2xl bg-[#FFFBEB] border border-amber-200 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30">
-                  <option value="3-5">3–5 years</option>
-                  <option value="5-7">5–7 years</option>
-                  <option value="7-9">7–9 years</option>
-                </select>
-              </div>
-
-              <div>
-                <label class="text-xs font-semibold text-amber-900 mb-1.5 block">
-                  📖 Story length
-                </label>
-                <select id="page-count"
-                        class="w-full text-sm px-3.5 py-2.5 rounded-2xl bg-[#FFFBEB] border border-amber-200 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30">
-                  <option value="8">8 pages</option>
-                  <option value="12">12 pages</option>
-                  <option value="16">16 pages</option>
-                </select>
-              </div>
-            </div>
-
-            <button
-              id="generate-btn"
-              type="submit"
-              class="w-full mt-2 inline-flex items-center justify-center gap-2 text-sm font-semibold rounded-2xl px-5 py-3 bg-primary text-white shadow-soft hover:bg-primaryDark transition disabled:opacity-60 disabled:cursor-not-allowed">
-              <span id="generate-btn-label">✨ Generate Book (1 credit)</span>
-              <span id="generate-btn-spinner" class="hidden text-xs animate-pulse">Thinking…</span>
-            </button>
-          </form>
-
-          <button
-            id="download-pdf-btn"
-            class="w-full mt-3 inline-flex items-center justify-center gap-2 text-xs font-semibold rounded-2xl px-4 py-2 bg-white border border-amber-300 text-amber-900 hover:bg-amber-50 transition disabled:opacity-60 disabled:cursor-not-allowed"
-            disabled>
-            📄 Unlock & Download PDF (5 credits total)
-          </button>
-
-          <button
-            id="generate-images-btn"
-            class="w-full mt-2 inline-flex items-center justify-center gap-2 text-xs font-semibold rounded-2xl px-4 py-2 bg-white border border-amber-300 text-amber-900 hover:bg-amber-50 transition disabled:opacity-60 disabled:cursor-not-allowed"
-            disabled>
-            🎨 Generate Coloring Page Previews
-          </button>
-
-          <p class="mt-2 text-[11px] text-amber-800/80">
-            Making a new story book uses <span class="font-semibold">1 Crayon Credit</span>. Unlocking downloads for that book uses
-            <span class="font-semibold">4 more credits</span> (5 total). Pages are laid out on two shelves so it feels like a real picture book, and coloring page previews sit on the bottom shelf.
-          </p>
-        </div>
-      </div>
-    </section>
-
-    <!-- RIGHT: STATUS + SHELVES -->
-    <section id="shelf-section" class="w-full lg:w-[60%] space-y-4">
-      <!-- Status -->
-      <div id="status-bar"
-           class="rounded-2xl border border-amber-200 bg-[#FFFBEB] px-3.5 py-3 flex items-start gap-2 text-xs text-amber-900 shadow-soft">
-        <span id="status-icon" class="text-lg">💡</span>
-        <div>
-          <p id="status-title" class="font-semibold">Ready to create a book.</p>
-          <p id="status-text" class="text-amber-800/90 mt-0.5">
-            Enter a character and story idea, then click “Generate Book”.
-          </p>
-        </div>
-      </div>
-
-      <!-- Shelf area -->
-      <div class="bg-transparent flex-1 flex flex-col gap-6">
-        <!-- Top shelf: story overview -->
-        <div class="relative pb-6">
-          <div class="absolute left-0 right-0 bottom-0 h-4 bg-wood border-t border-woodDark shadow-inner"></div>
-
-          <div class="flex gap-4 px-2 pb-3">
-            <div id="story-card"
-                 class="hidden bg-white rounded-xl border-2 border-amber-300 shadow-heavy p-4 w-full max-w-sm">
-              <div class="flex items-center justify-between gap-3 mb-2">
-                <div>
-                  <p class="text-[11px] uppercase tracking-[0.12em] text-amber-700 mb-0.5 flex items-center gap-1">
-                    <span>Story book</span> <span>📖</span>
-                  </p>
-                  <h3 id="story-title" class="text-lg font-bold text-amber-900">Title</h3>
-                  <p id="story-tagline" class="text-xs text-amber-800 mt-1"></p>
-                </div>
-                <span class="text-[11px] rounded-full px-2.5 py-1 bg-blue-50 text-blue-700 border border-blue-200">
-                  AI made
-                </span>
-              </div>
-              <div id="story-body" class="space-y-3 text-sm leading-relaxed text-amber-900">
-                <!-- paragraphs -->
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Middle shelf: first half of pages -->
-        <div class="relative pb-6">
-          <div class="absolute left-0 right-0 bottom-0 h-4 bg-wood border-t border-woodDark shadow-inner"></div>
-
-          <div class="flex gap-4 px-2 pb-3">
-            <div id="pages-top-card"
-                 class="hidden bg-white rounded-xl border-2 border-amber-300 p-4 w-full">
-              <div class="flex items-center justify-between gap-3 mb-2">
-                <div>
-                  <p class="text-[11px] uppercase tracking-[0.12em] text-amber-700 mb-0.5 flex items-center gap-1">
-                    <span>Story pages</span> <span>🖍️</span>
-                  </p>
-                  <h3 class="text-lg font-bold text-amber-900">Top shelf pages</h3>
-                </div>
-                <span class="text-[11px] rounded-full px-2.5 py-1 bg-amber-50 text-amber-900 border border-amber-200">
-                  Pages 1+
-                </span>
-              </div>
-              <p class="text-xs text-amber-800/90 mb-2">
-                Each card shows the picture idea at the top and the story words for that page at the bottom.
-              </p>
-              <div id="pages-grid-top" class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <!-- top half pages go here -->
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Bottom shelf: second half of pages -->
-        <div class="relative pb-6">
-          <div class="absolute left-0 right-0 bottom-0 h-4 bg-wood border-t border-woodDark shadow-inner"></div>
-
-          <div class="flex gap-4 px-2 pb-3">
-            <div id="pages-bottom-card"
-                 class="hidden bg-white rounded-xl border-2 border-amber-300 p-4 w-full">
-              <div class="flex items-center justify-between gap-3 mb-2">
-                <div>
-                  <p class="text-[11px] uppercase tracking-[0.12em] text-amber-700 mb-0.5 flex items-center gap-1">
-                    <span>More story pages</span> <span>📚</span>
-                  </p>
-                  <h3 class="text-lg font-bold text-amber-900">Bottom shelf pages</h3>
-                </div>
-                <span class="text-[11px] rounded-full px-2.5 py-1 bg-amber-50 text-amber-900 border border-amber-200">
-                  Later pages
-                </span>
-              </div>
-              <p class="text-xs text-amber-800/90 mb-2">
-                For an 8-page book, pages 5–8 appear here. Longer books split across both shelves.
-              </p>
-              <div id="pages-grid-bottom" class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <!-- bottom half pages go here -->
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- NEW: Image shelf for coloring page previews -->
-        <div class="relative pb-6">
-          <div class="absolute left-0 right-0 bottom-0 h-4 bg-wood border-t border-woodDark shadow-inner"></div>
-
-          <div class="flex gap-4 px-2 pb-3">
-            <div id="images-card"
-                 class="hidden bg-white rounded-xl border-2 border-amber-300 p-4 w-full">
-              <div class="flex items-center justify-between gap-3 mb-2">
-                <div>
-                  <p class="text-[11px] uppercase tracking-[0.12em] text-amber-700 mb-0.5 flex items-center gap-1">
-                    <span>Coloring pages</span> <span>🎨</span>
-                  </p>
-                  <h3 class="text-lg font-bold text-amber-900">Coloring page previews</h3>
-                </div>
-                <span class="text-[11px] rounded-full px-2.5 py-1 bg-pink-50 text-pink-700 border border-pink-200">
-                  Preview only
-                </span>
-              </div>
-              <p class="text-xs text-amber-800/90 mb-2">
-                These previews are AI-drawn from your page prompts in line-art style. Once downloads are unlocked, you can print them or use them in drawing apps.
-              </p>
-              <div id="images-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <!-- images go here -->
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </section>
-  </main>
-</div>
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Magic Story Colorbooks</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <!-- Tailwind CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
             biscuit: "#FFF7E6",
             amberSoft: "#FEF3C7",
           },
@@ -723,7 +343,7 @@
   const pagesGridTop = document.getElementById("pages-grid-top");
   const pagesGridBottom = document.getElementById("pages-grid-bottom");
 
-    const imagesCard = document.getElementById("images-card");
+  const imagesCard = document.getElementById("images-card");
   const imagesGrid = document.getElementById("images-grid");
 
   let lastBookData = null;
@@ -905,9 +525,6 @@
     const storyIdea = document.getElementById("story-idea").value;
     const ageRange = document.getElementById("age-range").value;
     const pageCount = document.getElementById("page-count").value;
-    
-    // remember what was typed so we can use it for image prompts
-    lastFormInputs = { title, mainCharacter, storyIdea, ageRange, pageCount };
 
     // remember inputs for image prompts
     lastFormInputs = { title, mainCharacter, storyIdea, ageRange, pageCount };
@@ -1035,7 +652,7 @@
     }
   });
 
-  // =================== GENERATE IMAGES (NO EXTRA CREDITS, PREVIEW ONLY) ===================
+  // =================== GENERATE IMAGES (PREVIEW ONLY) ===================
   imagesBtn.addEventListener("click", async () => {
     if (!lastBookData || !Array.isArray(lastBookData.prompts)) return;
 
@@ -1050,45 +667,54 @@
     try {
       const title =
         lastBookData.title ||
-        lastFormInputs?.title ||
+        lastFormInputs.title ||
         "Children's story book";
 
-      // What the parent wrote about the main character
-      const mcRaw = (lastFormInputs?.mainCharacter || lastBookData.mainCharacter || "").trim();
+      const storyIdea = (lastFormInputs.storyIdea || "").trim();
 
-      // Shared character description used for ALL pages
+      const mcRaw = (
+        lastFormInputs.mainCharacter ||
+        lastBookData.mainCharacter ||
+        ""
+      ).trim();
+
       const characterDescription =
         mcRaw && mcRaw.length
-          ? `${mcRaw}. Draw them as the SAME child on every page: same face, same hairstyle, same skin tone, same height and age, and the same simple outfit (shorts and a t-shirt or a sports uniform that fits the story).`
-          : `a young child. Draw them as the SAME child on every page: same face, same hairstyle, same skin tone, same height and age, and the same simple outfit (shorts and a t-shirt).`;
+          ? `${mcRaw}. Draw the SAME main character on every page: same face or animal features, same hairstyle/fur/markings, same approximate age/size, and the same simple outfit or body pattern.`
+          : `a friendly storybook character. Draw the SAME main character on every page: same features, same approximate age/size, and the same simple outfit.`;
 
-      const ageRange =
-        lastFormInputs?.ageRange ||
-        lastBookData.ageRange ||
-        "3-5";
-
-      // Turn each AI scene prompt into a full text prompt for Stability
       const promptStrings = lastBookData.prompts.map((item, index) => {
         const pageNumber = item.page || index + 1;
-        const sceneText =
+        const baseScene =
           item.prompt ||
           item.description ||
           (typeof item === "string" ? item : "") ||
           `Scene ${pageNumber}`;
 
+        const sceneText = baseScene.replace(/\s+/g, " ").trim().slice(0, 500);
+
+        const contextLine = storyIdea
+          ? `Story idea: ${storyIdea}. `
+          : "";
+
         return (
           `Black-and-white line-art coloring page for a children's story titled "${title}". ` +
-          `Main character: ${characterDescription} ` +
-          `Page ${pageNumber} scene: ${sceneText}. ` +
-          `The main character should clearly be the SAME child as on all other pages of this book. ` +
-          `Cartoon style, kid-friendly, big simple shapes, thick clean outlines, white background, no color or shading.`
+          contextLine +
+          `This image must match PAGE ${pageNumber} of the story. ` +
+          `Scene to draw (illustrate this exact moment): ${sceneText}. ` +
+          `Cartoon style, cozy picture-book vibe, kid-friendly, big simple shapes, thick clean outlines, white background, no color or shading, no grey shading, no gradients.`
         );
       });
+
+      console.log("Prompt strings sent to /api/generate-images:", promptStrings);
 
       const res = await fetch("/api/generate-images", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompts: promptStrings }),
+        body: JSON.stringify({
+          prompts: promptStrings,
+          character: characterDescription
+        }),
       });
 
       if (!res.ok) {
