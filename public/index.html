@@ -378,7 +378,299 @@
   </main>
 </div>
 
-<script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Magic Story Colorbooks</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            biscuit: "#FFF7E6",
+            amberSoft: "#FEF3C7",
+          },
+          fontFamily: {
+            kids: ["Comic Neue", "Comic Sans MS", "system-ui", "sans-serif"],
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    body {
+      background: #fff7e6;
+      font-family: "Comic Neue", "Comic Sans MS", system-ui, sans-serif;
+    }
+
+    .shelf-highlight {
+      animation: shelfFlash 1.2s ease;
+    }
+
+    @keyframes shelfFlash {
+      0% {
+        box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.9);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(251, 191, 36, 0);
+      }
+    }
+  </style>
+</head>
+
+<body class="min-h-screen text-amber-900">
+
+  <!-- NAVBAR -->
+  <header class="w-full bg-white border-b border-amber-100 shadow-sm">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <img src="/Scribbles.jpg" alt="Scribbles" class="w-10 h-10 rounded-full shadow" />
+        <div>
+          <h1 class="text-lg font-bold text-amber-900">Magic Story Colorbooks</h1>
+          <p class="text-xs text-amber-700">
+            Turn your child’s ideas into cozy story coloring books.
+          </p>
+        </div>
+      </div>
+
+      <nav class="flex items-center gap-2 text-xs">
+        <button id="nav-home" class="px-3 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+          Home
+        </button>
+        <button id="nav-reading" class="px-3 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+          Get reading
+        </button>
+        <button id="nav-make" class="px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300 font-semibold">
+          Make a book
+        </button>
+        <button id="nav-fun" class="px-3 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+          Fun ideas
+        </button>
+        <button id="nav-shelf" class="px-3 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+          My shelf
+        </button>
+
+        <span id="credits-pill"
+              class="ml-2 px-3 py-1 rounded-full bg-amber-500 text-white font-semibold shadow">
+          Crayon Credits: 0
+        </span>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 py-6 space-y-10">
+
+    <!-- STATUS BAR -->
+    <section class="w-full">
+      <div id="status-bar"
+           class="rounded-xl bg-amber-50 border border-amber-100 px-4 py-3 flex gap-3 items-start">
+        <div id="status-icon" class="text-xl">📖</div>
+        <div>
+          <p id="status-title" class="text-sm font-bold text-amber-900">
+            Ready to create a book.
+          </p>
+          <p id="status-text" class="text-xs text-amber-700">
+            Tell Scribbles about your character and what the story should be about, then click “Generate Book”.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- MAKE A BOOK SECTION -->
+    <section id="make-book-section" class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+      <!-- LEFT: FORM -->
+      <div class="bg-white rounded-2xl shadow border border-amber-200 p-5">
+        <div class="flex gap-3 mb-4">
+          <img src="/Scribbles.jpg" alt="Scribbles" class="w-12 h-12 rounded-full shadow" />
+          <div>
+            <h2 class="font-bold text-amber-900">Hi, I’m Scribbles!</h2>
+            <p class="text-xs text-amber-700">
+              Tell me about your character and I’ll help you make a story coloring book for the shelf.
+            </p>
+          </div>
+        </div>
+
+        <form id="book-form" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-amber-800 mb-1">
+              Book title <span class="text-amber-500">(optional)</span>
+            </label>
+            <input id="title"
+                   type="text"
+                   class="w-full px-3 py-2 rounded-xl border border-amber-200 bg-amber-50 text-sm"
+                   placeholder="Sammy the Brave Iguana" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-amber-800 mb-1">
+              Main character
+            </label>
+            <input id="main-character"
+                   type="text"
+                   class="w-full px-3 py-2 rounded-xl border border-amber-200 bg-amber-50 text-sm"
+                   placeholder="An iguana named Sammy who's afraid of the dark" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-amber-800 mb-1">
+              What should the story be about?
+            </label>
+            <textarea id="story-idea"
+                      rows="4"
+                      class="w-full px-3 py-2 rounded-xl border border-amber-200 bg-amber-50 text-sm"
+                      placeholder="Sammy hides under the covers until forest friends and fireflies help him feel brave."></textarea>
+            <p class="mt-1 text-[11px] text-amber-600">
+              The app turns this into a cozy kids’ story with matching coloring pages laid out like a real book.
+            </p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-amber-800 mb-1">
+                Age range
+              </label>
+              <select id="age-range"
+                      class="w-full px-3 py-2 rounded-xl border border-amber-200 bg-amber-50 text-sm">
+                <option value="3-5">3–5 years</option>
+                <option value="5-7">5–7 years</option>
+                <option value="7-9">7–9 years</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-amber-800 mb-1">
+                Story length
+              </label>
+              <select id="page-count"
+                      class="w-full px-3 py-2 rounded-xl border border-amber-200 bg-amber-50 text-sm">
+                <option value="8">8 pages</option>
+                <option value="12">12 pages</option>
+                <option value="16">16 pages</option>
+              </select>
+            </div>
+          </div>
+
+          <button id="generate-btn"
+                  type="submit"
+                  class="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold shadow flex items-center justify-center gap-2">
+            <span id="generate-btn-label">✨ Generate Book (1 credit)</span>
+            <span id="generate-btn-spinner" class="hidden text-xs">
+              Thinking…
+            </span>
+          </button>
+
+          <button id="download-pdf-btn"
+                  type="button"
+                  disabled
+                  class="w-full py-3 rounded-xl bg-white text-amber-800 border border-amber-300 text-sm font-semibold disabled:opacity-40">
+            📄 Unlock & Download PDF (5 credits total)
+          </button>
+
+          <button id="generate-images-btn"
+                  type="button"
+                  disabled
+                  class="w-full py-3 rounded-xl bg-white text-amber-800 border border-amber-300 text-sm font-semibold disabled:opacity-40">
+            🎨 Generate Coloring Page Previews
+          </button>
+
+          <p class="text-[11px] text-amber-600 mt-1">
+            Making a new story book uses 1 Crayon Credit. Unlocking downloads for that book uses 4 more credits (5 total).
+          </p>
+        </form>
+      </div>
+
+      <!-- RIGHT: STORY CARD -->
+      <div class="space-y-4">
+        <div id="story-card"
+             class="hidden bg-white rounded-2xl shadow border border-amber-200 p-5">
+          <div class="flex items-center justify-between mb-2 text-xs text-amber-600">
+            <span class="uppercase tracking-[0.14em]">Story book</span>
+            <span class="px-2 py-0.5 rounded-full bg-amber-50 border border-amber-100">
+              AI made
+            </span>
+          </div>
+          <h3 id="story-title" class="text-lg font-bold text-amber-900 mb-1"></h3>
+          <p id="story-tagline" class="text-xs text-amber-700 mb-3"></p>
+          <div id="story-body" class="space-y-2 text-sm leading-relaxed"></div>
+        </div>
+
+        <!-- placeholder when no story yet -->
+        <div id="story-card-empty"
+             class="bg-white rounded-2xl shadow border border-amber-100 p-5 text-sm text-amber-800">
+          <p class="font-semibold mb-1">No story yet.</p>
+          <p class="text-xs text-amber-700">
+            Once Scribbles writes your story, it will appear here with all the text together like a regular picture book.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SHELF SECTION -->
+    <section id="shelf-section" class="space-y-6">
+      <!-- TOP SHELF PAGES -->
+      <div id="pages-top-card"
+           class="hidden bg-white rounded-2xl shadow border border-amber-200 p-5 relative overflow-hidden">
+        <div class="flex items-center justify-between mb-2 text-xs text-amber-600">
+          <span class="uppercase tracking-[0.14em]">Story pages</span>
+          <span class="rounded-full border border-amber-100 px-2 py-0.5 text-[11px]">
+            Pages 1+
+          </span>
+        </div>
+        <p class="text-xs text-amber-700 mb-3">
+          Each card shows the picture idea at the top and the story words for that page at the bottom, like a little book laid out on a shelf.
+        </p>
+
+        <div id="pages-grid-top" class="grid sm:grid-cols-2 gap-3 relative z-10"></div>
+
+        <!-- visual shelf bar -->
+        <div class="absolute left-0 right-0 bottom-0 h-2 bg-amber-500"></div>
+      </div>
+
+      <!-- BOTTOM SHELF PAGES -->
+      <div id="pages-bottom-card"
+           class="hidden bg-white rounded-2xl shadow border border-amber-200 p-5 relative overflow-hidden">
+        <div class="flex items-center justify-between mb-2 text-xs text-amber-600">
+          <span class="uppercase tracking-[0.14em]">More pages</span>
+          <span class="rounded-full border border-amber-100 px-2 py-0.5 text-[11px]">
+            Pages 5+
+          </span>
+        </div>
+        <p class="text-xs text-amber-700 mb-3">
+          If your story is longer, the rest of the pages sit neatly on this second shelf.
+        </p>
+
+        <div id="pages-grid-bottom" class="grid sm:grid-cols-2 gap-3 relative z-10"></div>
+
+        <!-- visual shelf bar -->
+        <div class="absolute left-0 right-0 bottom-0 h-2 bg-amber-500"></div>
+      </div>
+
+      <!-- COLORING IMAGE PREVIEWS -->
+      <div id="images-card"
+           class="hidden bg-white rounded-2xl shadow border border-amber-200 p-5">
+        <div class="flex items-center justify-between mb-2 text-xs text-amber-600">
+          <span class="uppercase tracking-[0.14em]">Coloring pages</span>
+          <span class="rounded-full border border-amber-100 px-2 py-0.5 text-[11px]">
+            Preview only
+          </span>
+        </div>
+        <p class="text-xs text-amber-700 mb-3">
+          These are AI line-art previews based on your story prompts. Once unlocked, you can print them or use them in drawing apps.
+        </p>
+
+        <div id="images-grid" class="grid sm:grid-cols-2 gap-4"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- =================== SCRIPT =================== -->
+  <script>
   // =================== CREDIT SYSTEM ===================
   let credits = 0;
   let downloadsUnlockedForCurrentBook = false;
@@ -421,6 +713,7 @@
   const statusText = document.getElementById("status-text");
 
   const storyCard = document.getElementById("story-card");
+  const storyCardEmpty = document.getElementById("story-card-empty");
   const storyTitleEl = document.getElementById("story-title");
   const storyTaglineEl = document.getElementById("story-tagline");
   const storyBodyEl = document.getElementById("story-body");
@@ -434,6 +727,7 @@
   const imagesGrid = document.getElementById("images-grid");
 
   let lastBookData = null;
+  let lastFormInputs = null;
 
   // =================== STATUS + LOADING ===================
   function setLoading(isLoading, labelWhenReady = "✨ Generate Book (1 credit)") {
@@ -474,6 +768,7 @@
       storyBodyEl.appendChild(para);
     });
     storyCard.classList.remove("hidden");
+    storyCardEmpty.classList.add("hidden");
 
     // --- Build page cards: prompt on top, story snippet on bottom ---
     pagesGridTop.innerHTML = "";
@@ -605,6 +900,9 @@
     const ageRange = document.getElementById("age-range").value;
     const pageCount = document.getElementById("page-count").value;
 
+    // remember inputs for image prompts
+    lastFormInputs = { title, mainCharacter, storyIdea, ageRange, pageCount };
+
     if (!mainCharacter.trim() && !storyIdea.trim()) {
       setStatus({
         icon: "⚠️",
@@ -729,7 +1027,6 @@
   });
 
   // =================== GENERATE IMAGES (NO EXTRA CREDITS, PREVIEW ONLY) ===================
-    // Generate coloring images that really match the SAME child
   imagesBtn.addEventListener("click", async () => {
     if (!lastBookData || !Array.isArray(lastBookData.prompts)) return;
 
@@ -782,7 +1079,7 @@
       const res = await fetch("/api/generate-images", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompts: promptStrings }), // send strings, not objects
+        body: JSON.stringify({ prompts: promptStrings }),
       });
 
       if (!res.ok) {
@@ -803,19 +1100,9 @@
         })
         .filter(Boolean);
 
-      imagesGrid.innerHTML = "";
-      normalized.forEach((img) => {
-        const div = document.createElement("div");
-        div.className = "border rounded-xl p-2 bg-yellow-50";
-        div.innerHTML = `
-          <img src="${img.url}" class="w-full rounded mb-2 shadow" />
-          <p class="text-center text-sm">Page ${img.page}</p>
-        `;
-        imagesGrid.appendChild(div);
-      });
+      renderImages(normalized);
 
       if (normalized.length > 0) {
-        imagesCard.classList.remove("hidden");
         setStatus({
           icon: "🎉",
           title: "Coloring pages ready!",
@@ -905,6 +1192,6 @@
       });
     });
   }
-</script>
+  </script>
 </body>
 </html>
