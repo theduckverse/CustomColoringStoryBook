@@ -233,7 +233,8 @@
   const imagesCard = document.getElementById("images-card");
   const imagesGrid = document.getElementById("images-grid");
 
-  let lastBookData = null;
+  let lastBookData = null;       // what OpenAI returned
+  let lastFormInputs = null;     // what the parent typed
 
   function setStatus(obj) {
     statusIcon.textContent = obj.icon;
@@ -321,11 +322,16 @@
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const title = document.getElementById("title").value;
-    const mainCharacter = document.getElementById("main-character").value;
-    const storyIdea = document.getElementById("story-idea").value;
+    const title = document.getElementById("title").value.trim();
+    const mainCharacter = document
+      .getElementById("main-character")
+      .value.trim();
+    const storyIdea = document.getElementById("story-idea").value.trim();
     const ageRange = document.getElementById("age-range").value;
     const pageCount = document.getElementById("page-count").value;
+
+    // remember what the parent typed so we can use it in image prompts
+    lastFormInputs = { title, mainCharacter, storyIdea, ageRange, pageCount };
 
     setLoading(true);
     setStatus({
@@ -365,6 +371,7 @@
     setLoading(false);
   });
 
+  // Generate coloring images that REALLY match this story
   imagesBtn.addEventListener("click", async () => {
     if (!lastBookData || !Array.isArray(lastBookData.prompts)) return;
 
@@ -377,10 +384,40 @@
     imagesBtn.disabled = true;
 
     try {
+      const title =
+        lastBookData.title ||
+        lastFormInputs?.title ||
+        "Children's story book";
+      const character =
+        lastFormInputs?.mainCharacter && lastFormInputs.mainCharacter.length
+          ? lastFormInputs.mainCharacter
+          : "the main character";
+      const ageRange =
+        lastFormInputs?.ageRange ||
+        lastBookData.ageRange ||
+        "3-5";
+
+      // Turn each prompt object into a rich string prompt for the image model
+      const promptStrings = lastBookData.prompts.map((item, index) => {
+        const pageNumber = item.page || index + 1;
+        const sceneText =
+          item.prompt ||
+          item.description ||
+          (typeof item === "string" ? item : "") ||
+          `Scene ${pageNumber}`;
+
+        return (
+          `Black-and-white line-art coloring page for a children's book titled "${title}". ` +
+          `Main character: ${character}. Age range ${ageRange} years. ` +
+          `Scene ${pageNumber}: ${sceneText}. ` +
+          `Focus clearly on ${character}, big expressions, kid-friendly, no color, simple background, clean outlines.`
+        );
+      });
+
       const res = await fetch("/api/generate-images", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompts: lastBookData.prompts }),
+        body: JSON.stringify({ prompts: promptStrings }), // send strings, not objects
       });
 
       if (!res.ok) {
@@ -388,6 +425,7 @@
       }
 
       const raw = await res.json();
+      console.log("Raw image payload:", raw);
 
       const normalized = (raw.images || raw.data || [])
         .map((item, i) => {
