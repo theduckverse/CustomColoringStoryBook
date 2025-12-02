@@ -1,41 +1,40 @@
-// server.js - Complete Server Setup
+// server.js - Magic Story Colorbooks backend
 
 // 1. Core Imports
 const express = require("express");
 const bodyParser = require("body-parser");
-const fetch = require("node-fetch"); // Required for fetch in older Node environments
-const FormData = require("form-data"); // Required for multipart/form-data requests
-const OpenAI = require("openai");
+const fetch = require("node-fetch");       // For HTTP calls to Stability
+const FormData = require("form-data");     // For multipart form-data to Stability
+const OpenAI = require("openai");          // Official OpenAI SDK
 
-// OpenAI client
+// 2. OpenAI client
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY, // must be set in Render
+  apiKey: process.env.OPENAI_API_KEY,      // Set this in Render
 });
 
+// 3. Express setup
 const app = express();
-const PORT = 3000; // Choose your desired port
+const PORT = process.env.PORT || 3000;     // Render provides PORT
 
-// 2. Middleware
+// Middleware
 app.use(bodyParser.json());
-// Serve static files (like your index.html, Scribbles.jpg, etc.)
+// Serve your frontend (index.html, Scribbles.jpg, shelf.png, etc.)
 app.use(express.static("public"));
 
-// 3. Environment Variables (Stability AI Key)
+// 4. Environment variables for Stability
 const STABILITY_API_KEY = process.env.STABILITY_API_KEY;
 
 if (!STABILITY_API_KEY) {
-  console.warn(
-    "⚠️ STABILITY_API_KEY is not set. /api/generate-images will fail."
-  );
+  console.warn("⚠️ STABILITY_API_KEY is not set. /api/generate-images will fail.");
 }
 
-// =================================================================
-// 4. API Routes
-// =================================================================
+// =====================================================================
+// 5. API ROUTES
+// =====================================================================
 
 // --- API: Generate Book (OpenAI-powered) ---
 app.post("/api/generate-book", async (req, res) => {
-  const { title, mainCharacter, storyIdea, ageRange, pageCount } = req.body;
+  const { title, mainCharacter, storyIdea, ageRange, pageCount } = req.body || {};
 
   if (!mainCharacter || !storyIdea) {
     return res
@@ -52,11 +51,13 @@ app.post("/api/generate-book", async (req, res) => {
       : "a brave little hero";
   const safeIdea = storyIdea.trim();
   const safeAgeRange = ageRange || "3-5";
+
   const numPagesRaw = parseInt(pageCount, 10);
   const numPages =
     isNaN(numPagesRaw) ? 8 : Math.max(4, Math.min(numPagesRaw, 16));
 
-const systemPrompt = `
+  // System prompt that controls story + illustration prompts
+  const systemPrompt = `
 You write cozy, gentle children's storybooks that can be turned into coloring books.
 
 Return ONLY valid JSON, no extra text, in this exact format:
@@ -77,7 +78,7 @@ Story rules:
 
 Illustration prompt rules (VERY IMPORTANT):
 - "prompts" is for an image model (Stable Diffusion style).
-- Each prompt must describe a **single, clear scene** to draw as a black-and-white coloring page.
+- Each prompt must describe a single, clear scene to draw as a black-and-white coloring page.
 - Each prompt MUST:
   - Mention the main character by name.
   - Mention if they are a child (for example: "a young boy named Leo" or "a little girl named Maya").
@@ -86,7 +87,7 @@ Illustration prompt rules (VERY IMPORTANT):
 - Prompts should be written like detailed camera directions, not like story text. Example style:
   "Draw a young boy named Theo in cozy space pajamas, standing by a window in his bedroom, looking up at a starry sky with a toy rocket in his hand."
 - Use page numbers from 1 to pageCount.
-`;
+`.trim();
 
   const userPrompt = `
 Create a children's story and illustration prompts for a custom coloring book.
@@ -98,11 +99,11 @@ Age range: "${safeAgeRange}"
 Number of pages: ${numPages}
 
 Make the story reassuring and hopeful. The character faces this challenge but grows braver and more confident by the end.
-`;
+`.trim();
 
   try {
     const completion = await openai.chat.completions.create({
-      model: "gpt-4.1-mini", // you can change to another OpenAI model if you want
+      model: "gpt-4.1-mini",                      // You can swap to another OpenAI model if you like
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: systemPrompt },
@@ -129,7 +130,7 @@ Make the story reassuring and hopeful. The character faces this challenge but gr
     if (!Array.isArray(book.paragraphs)) book.paragraphs = [];
     if (!Array.isArray(book.prompts)) book.prompts = [];
 
-    // Ensure page numbers from 1..numPages
+    // Ensure prompts are limited & have page numbers
     book.prompts = book.prompts
       .slice(0, numPages)
       .map((p, idx) => ({
@@ -149,7 +150,7 @@ Make the story reassuring and hopeful. The character faces this challenge but gr
   } catch (err) {
     console.error("OpenAI /api/generate-book error:", err);
 
-    // Fallback so the UI still works if AI fails
+    // Fallback so UI still works if AI fails
     const fallbackParagraphs = [
       `${safeCharacter} has a big imagination, but lately something has been on their mind: ${safeIdea}. Every day, that feeling seems a little bit bigger and a little harder to ignore.`,
       `One day, ${safeCharacter} decides something has to change. They take a deep breath and wonder if there might be a new, braver way to move through the day.`,
@@ -159,13 +160,13 @@ Make the story reassuring and hopeful. The character faces this challenge but gr
 
     const fallbackPrompts = [];
     for (let i = 1; i <= numPages; i++) {
-      let promptText = "";
+      let promptText;
       if (i === 1) {
-        promptText = `${safeCharacter} in a cozy room, thinking about the big problem on their mind: ${safeIdea}.`;
+        promptText = `Draw ${safeCharacter} in a cozy room, clearly a child, thinking about ${safeIdea}, with a comforting object nearby (like a stuffed animal or favorite toy).`;
       } else if (i === numPages) {
-        promptText = `${safeCharacter} feeling proud and calm at the end of the story, showing how much braver they have become.`;
+        promptText = `Draw ${safeCharacter}, still a child, looking proud and calm at the end of the story, showing how much braver they have become, in a simple safe setting.`;
       } else {
-        promptText = `${safeCharacter} on their gentle adventure, taking small brave steps and meeting kind helpers.`;
+        promptText = `Draw ${safeCharacter} on their gentle adventure, taking small brave steps and meeting kind helpers, in a simple kid-friendly scene.`;
       }
       fallbackPrompts.push({ page: i, prompt: promptText });
     }
@@ -182,6 +183,7 @@ Make the story reassuring and hopeful. The character faces this challenge but gr
 
 // --- API: Export PDF (Placeholder) ---
 app.post("/api/export-pdf", async (req, res) => {
+  // TODO: Replace with real PDF generation (pdfkit / Puppeteer, etc.)
   const mockPdfContent = "This is a placeholder PDF file content.";
   res.setHeader("Content-Type", "application/pdf");
   res.setHeader(
@@ -191,7 +193,7 @@ app.post("/api/export-pdf", async (req, res) => {
   res.send(Buffer.from(mockPdfContent, "utf-8"));
 });
 
-// --- API: Generate coloring-page images with Stability AI (Stable Diffusion) ---
+// --- API: Generate coloring-page images with Stability AI ---
 app.post("/api/generate-images", async (req, res) => {
   const { prompts } = req.body || {};
 
@@ -199,7 +201,7 @@ app.post("/api/generate-images", async (req, res) => {
     return res.status(400).json({ error: "No prompts provided." });
   }
 
-  const maxImages = Math.min(prompts.length, 8); // Capped at 8 pages
+  const maxImages = Math.min(prompts.length, 8);
 
   if (!STABILITY_API_KEY) {
     return res.status(500).json({
@@ -217,25 +219,36 @@ app.post("/api/generate-images", async (req, res) => {
       let basePrompt = "";
 
       // Support either:
-      // - { page, prompt } objects
-      // - plain string prompts
+      //  - plain strings
+      //  - { page, prompt } objects
       if (typeof rawItem === "string") {
         basePrompt = rawItem;
       } else if (rawItem && typeof rawItem === "object") {
         page = rawItem.page || page;
-        basePrompt = rawItem.prompt || rawItem.description || "";
+        basePrompt =
+          rawItem.prompt ||
+          rawItem.description ||
+          "";
       }
 
       if (!basePrompt) continue;
 
       const fullPrompt = `
 ${basePrompt}
-Black-and-white line-art coloring page for young children.
-Thick outlines, no shading, simple background, kid-friendly, clean coloring-book style.
+
+Line-art coloring page illustration for a children's storybook.
+Black-and-white ONLY, white background.
+Simple cartoon style, big clear shapes, thick clean outlines.
+No color, no grey, no shading, no gradients, no textures, no cross-hatching.
+Focus on the main character and the scene from the story, kid-friendly and easy to color.
       `.trim();
 
       const form = new FormData();
       form.append("prompt", fullPrompt);
+      form.append(
+        "negative_prompt",
+        "full color, colored, realistic lighting, photo, 3d render, painting, gradients, heavy shading, grayscale fill, background color"
+      );
       form.append("output_format", "png");
       form.append("aspect_ratio", "1:1");
       form.append("model", "stable-image-core");
@@ -289,9 +302,10 @@ Thick outlines, no shading, simple background, kid-friendly, clean coloring-book
   }
 });
 
-// 5. Start the Server
+// =====================================================================
+// 6. Start the server
+// =====================================================================
 app.listen(PORT, () => {
-  console.log(`🚀 Server running at http://localhost:${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
   console.log("Serving static files from the 'public' directory.");
 });
-
