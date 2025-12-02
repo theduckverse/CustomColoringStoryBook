@@ -38,20 +38,25 @@
     100% { background: transparent; }
   }
 
-  /* extra oomph for the little wooden shelf bar */
-  .shelf-card {
+  /* BIG, OBVIOUS shelf under each page card */
+  #pages-shelf {
     position: relative;
-    padding-bottom: 1.75rem;
   }
-  .shelf-board {
+
+  #pages-shelf .shelf-card {
+    position: relative;
+    padding-bottom: 2.2rem; /* room for the shelf bar */
+  }
+
+  #pages-shelf .shelf-board {
     position: absolute;
-    left: 0.6rem;
-    right: 0.6rem;
-    bottom: 0.25rem;
-    height: 6px;
-    background: #facc15; /* amber-400 */
+    left: 0.5rem;
+    right: 0.5rem;
+    bottom: 0.35rem;
+    height: 12px;
+    background: #b45309;          /* brown-ish wood */
     border-radius: 9999px;
-    box-shadow: 0 2px 0 rgba(0,0,0,0.15);
+    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.25);
   }
 </style>
 </head>
