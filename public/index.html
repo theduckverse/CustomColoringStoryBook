@@ -164,12 +164,16 @@
           <div id="story-body" class="space-y-3 text-yellow-900"></div>
         </div>
 
-        <!-- PAGE PROMPTS -->
-        <div id="prompts-card"
-             class="hidden bg-white rounded-2xl p-5 border border-yellow-300 shadow">
-          <h3 class="text-xl font-bold text-yellow-900">Story pages</h3>
-          <ol id="prompts-list" class="mt-2 space-y-3 text-yellow-900"></ol>
-        </div>
+        <!-- STORY PAGES (SHELF VIEW) -->
+<div id="prompts-card"
+     class="hidden bg-white rounded-2xl p-5 border border-yellow-300 shadow">
+  <h3 class="text-xl font-bold text-yellow-900">Story pages</h3>
+  <p class="text-sm text-yellow-700">
+    Each page gets a short piece of the story, laid out like books on a shelf.
+  </p>
+  <div id="pages-shelf" class="mt-3 grid sm:grid-cols-2 gap-3"></div>
+</div>
+
 
         <!-- COLORING IMAGES -->
         <div id="images-card"
@@ -204,13 +208,12 @@
   const storyBodyEl = document.getElementById("story-body");
 
   const promptsCard = document.getElementById("prompts-card");
-  const promptsList = document.getElementById("prompts-list");
+  const pagesShelf = document.getElementById("pages-shelf");
 
   const imagesCard = document.getElementById("images-card");
   const imagesGrid = document.getElementById("images-grid");
 
-  let lastBookData = null;        // what the API returned
-  let lastFormInputs = null;      // what the parent typed
+  let lastBookData = null;
 
   function setStatus(obj) {
     statusIcon.textContent = obj.icon;
@@ -226,42 +229,65 @@
       : "✨ Generate Book (1 credit)";
   }
 
+  // Render story text + build "pages on a shelf" from paragraphs
   function renderBook(data) {
-    // Basic guards so we don't crash if the backend returns something weird
-    const safeTitle = data.title || (lastFormInputs?.title || "Your Custom Story");
-    const safeTagline = data.tagline || "";
-    const safeParagraphs = Array.isArray(data.paragraphs) ? data.paragraphs : [];
-    const safePrompts = Array.isArray(data.prompts) ? data.prompts : [];
+    const paragraphs = Array.isArray(data.paragraphs) ? data.paragraphs : [];
+    const prompts = Array.isArray(data.prompts) ? data.prompts : [];
 
-    storyTitleEl.textContent = safeTitle;
-    storyTaglineEl.textContent = safeTagline;
+    storyTitleEl.textContent = data.title || "";
+    storyTaglineEl.textContent = data.tagline || "";
 
+    // Full story text
     storyBodyEl.innerHTML = "";
-    safeParagraphs.forEach((p) => {
+    paragraphs.forEach((p) => {
       const el = document.createElement("p");
       el.textContent = p;
       storyBodyEl.appendChild(el);
     });
 
-    promptsList.innerHTML = "";
-    safePrompts.forEach((item) => {
-      const pageNumber = item.page ?? item.pageNumber ?? "?";
-      const text =
-        item.prompt ||
-        item.description ||
-        (typeof item === "string" ? item : "");
-      const li = document.createElement("li");
-      li.innerHTML = `<strong>Page ${pageNumber}:</strong> ${text}`;
-      promptsList.appendChild(li);
+    // --- Build per-page story snippets for the shelf ---
+    const pageCount = prompts.length || paragraphs.length || 1;
+    const pages = [];
+
+    if (paragraphs.length === 0) {
+      // Fallback if something weird happens
+      for (let i = 0; i < pageCount; i++) {
+        pages.push("Write your own sentence for this page.");
+      }
+    } else {
+      // Distribute paragraphs roughly evenly across pages
+      for (let i = 0; i < pageCount; i++) {
+        const idx = Math.floor((i * paragraphs.length) / pageCount);
+        pages.push(paragraphs[idx]);
+      }
+    }
+
+    // Render the shelf cards
+    pagesShelf.innerHTML = "";
+    pages.forEach((text, index) => {
+      const card = document.createElement("div");
+      card.className =
+        "relative bg-yellow-50 border border-yellow-200 rounded-xl p-3 shadow-sm shelf-highlight";
+      card.innerHTML = `
+        <div class="text-xs font-semibold text-yellow-700 uppercase tracking-wide mb-1">
+          Page ${index + 1}
+        </div>
+        <div class="text-sm text-yellow-900">
+          ${text}
+        </div>
+        <!-- little shelf board under the book -->
+        <div class="absolute -bottom-2 left-2 right-2 h-1 bg-yellow-300 rounded-full"></div>
+      `;
+      pagesShelf.appendChild(card);
     });
 
     storyCard.classList.remove("hidden");
     promptsCard.classList.remove("hidden");
 
-    // Store merged data so images can use *both* AI output + form info
+    // Keep the original prompts for image generation
     lastBookData = {
       ...data,
-      prompts: safePrompts,
+      pages,
     };
 
     downloadBtn.disabled = false;
@@ -277,14 +303,11 @@
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const title = document.getElementById("title").value.trim();
-    const mainCharacter = document.getElementById("main-character").value.trim();
-    const storyIdea = document.getElementById("story-idea").value.trim();
+    const title = document.getElementById("title").value;
+    const mainCharacter = document.getElementById("main-character").value;
+    const storyIdea = document.getElementById("story-idea").value;
     const ageRange = document.getElementById("age-range").value;
     const pageCount = document.getElementById("page-count").value;
-
-    // Remember what the parent typed so the image prompts can match
-    lastFormInputs = { title, mainCharacter, storyIdea, ageRange, pageCount };
 
     setLoading(true);
     setStatus({
@@ -336,32 +359,11 @@
     imagesBtn.disabled = true;
 
     try {
-      // Build prompts that actually match THIS story and THIS character
-      const title = lastFormInputs?.title || lastBookData.title || "Your Story";
-      const character =
-        lastFormInputs?.mainCharacter ||
-        lastBookData.mainCharacter ||
-        "the main character";
-      const ageRange = lastFormInputs?.ageRange || "kids";
-
-      const promptStrings = lastBookData.prompts.map((item, index) => {
-        const sceneText =
-          item.prompt ||
-          item.description ||
-          (typeof item === "string" ? item : "") ||
-          `Scene ${index + 1}`;
-
-        return (
-          `Black and white line-art coloring page for a children's book titled "${title}". ` +
-          `Age range ${ageRange}. Focus on ${character}. ` +
-          `Scene: ${sceneText}. No color, clean outlines, simple background.`
-        );
-      });
-
       const res = await fetch("/api/generate-images", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompts: promptStrings }),
+        // still send the original prompts to the backend
+        body: JSON.stringify({ prompts: lastBookData.prompts }),
       });
 
       if (!res.ok) {
@@ -384,8 +386,6 @@
           return { page: item.page || i + 1, url };
         })
         .filter(Boolean);
-
-      console.log("Normalized:", normalized);
 
       imagesGrid.innerHTML = "";
       normalized.forEach((img) => {
@@ -424,6 +424,5 @@
     imagesBtn.disabled = false;
   });
 </script>
-
 </body>
 </html>
