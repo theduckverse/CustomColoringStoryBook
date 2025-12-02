@@ -91,98 +91,108 @@ app.post("/api/export-pdf", async (req, res) => {
 });
 
 // --- API: Generate coloring-page images with Stability AI (Stable Diffusion) ---
-// This is the code snippet you provided, fixed and integrated.
 app.post("/api/generate-images", async (req, res) => {
-    const { prompts } = req.body || {};
+  const { prompts } = req.body || {};
 
-    if (!Array.isArray(prompts) || prompts.length === 0) {
-        return res.status(400).json({ error: "No prompts provided." });
-    }
+  if (!Array.isArray(prompts) || prompts.length === 0) {
+    return res.status(400).json({ error: "No prompts provided." });
+  }
 
-    // Safety: don’t let someone request 100 pages at once
-    const maxImages = Math.min(prompts.length, 8); // Capped at 8 pages
+  const maxImages = Math.min(prompts.length, 8); // Capped at 8 pages
 
-    if (!STABILITY_API_KEY) {
-        return res.status(500).json({
-            error: "Image generation not configured.",
-            details: "Missing STABILITY_API_KEY on the server.",
-        });
-    }
+  if (!STABILITY_API_KEY) {
+    return res.status(500).json({
+      error: "Image generation not configured.",
+      details: "Missing STABILITY_API_KEY on the server.",
+    });
+  }
 
-    try {
-        const images = [];
+  try {
+    const images = [];
 
-        for (let i = 0; i < maxImages; i++) {
-            const item = prompts[i];
-            const page = item.page || i + 1;
-            const basePrompt = item.prompt || "";
+    for (let i = 0; i < maxImages; i++) {
+      const rawItem = prompts[i];
+      let page = i + 1;
+      let basePrompt = "";
 
-            const fullPrompt = `
+      // Support either:
+      // - { page, prompt } objects
+      // - plain string prompts
+      if (typeof rawItem === "string") {
+        basePrompt = rawItem;
+      } else if (rawItem && typeof rawItem === "object") {
+        page = rawItem.page || page;
+        basePrompt =
+          rawItem.prompt ||
+          rawItem.description ||
+          "";
+      }
+
+      if (!basePrompt) {
+        // Skip empty prompts
+        continue;
+      }
+
+      const fullPrompt = `
 ${basePrompt}
 Black-and-white line-art coloring page for young children.
 Thick outlines, no shading, simple background, kid-friendly, clean coloring-book style.
-            `.trim();
+      `.trim();
 
-            // Build multipart/form-data payload
-            const form = new FormData();
-            form.append("prompt", fullPrompt);
-            form.append("output_format", "png");
-            form.append("aspect_ratio", "1:1");
-            form.append("model", "stable-image-core");
+      const form = new FormData();
+      form.append("prompt", fullPrompt);
+      form.append("output_format", "png");
+      form.append("aspect_ratio", "1:1");
+      form.append("model", "stable-image-core");
 
-            const response = await fetch(
-                "https://api.stability.ai/v2beta/stable-image/generate/core",
-                {
-                    method: "POST",
-                    headers: {
-                        Authorization: `Bearer ${STABILITY_API_KEY}`,
-                        // Note: Setting Accept: "image/*" is crucial for Stability AI to return binary data
-                        Accept: "image/*", 
-                    },
-                    body: form,
-                }
-            );
-
-            if (!response.ok) {
-                const errText = await response.text();
-                console.error(
-                    `Stability image error for page ${page}:`,
-                    response.status,
-                    errText
-                );
-                // Important for credit-based systems: check for 402 Payment Required or specific billing errors
-                if (response.status === 402) {
-                    return res.status(402).json({ error: "Billing limit reached" });
-                }
-                // Skip this page, continue with others
-                continue;
-            }
-
-            const arrayBuffer = await response.arrayBuffer();
-            // Convert binary image data to a base64 string for the browser to display
-            const base64 = Buffer.from(arrayBuffer).toString("base64");
-            const dataUrl = `data:image/png;base64,${base64}`;
-
-            images.push({ page, url: dataUrl });
+      const response = await fetch(
+        "https://api.stability.ai/v2beta/stable-image/generate/core",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${STABILITY_API_KEY}`,
+            Accept: "image/*",
+          },
+          body: form,
         }
+      );
 
-        if (images.length === 0) {
-            return res.status(500).json({
-                error: "No images could be generated.",
-                details: "Check server logs for Stability AI response errors.",
-            });
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error(
+          `Stability image error for page ${page}:`,
+          response.status,
+          errText
+        );
+        if (response.status === 402) {
+          return res.status(402).json({ error: "Billing limit reached" });
         }
+        continue;
+      }
 
-        return res.json({ images });
-    } catch (err) {
-        console.error("Error in /api/generate-images (Stability):", err);
-        return res.status(500).json({
-            error: "Failed to generate images.",
-            details: err?.message || String(err),
-        });
+      const arrayBuffer = await response.arrayBuffer();
+      const base64 = Buffer.from(arrayBuffer).toString("base64");
+      const dataUrl = `data:image/png;base64,${base64}`;
+
+      images.push({ page, url: dataUrl });
     }
-});
 
+    if (images.length === 0) {
+      return res.status(500).json({
+        error: "No images could be generated.",
+        details: "Check server logs for Stability AI response errors.",
+      });
+    }
+
+    return res.json({ images });
+  } catch (err) {
+    console.error("Error in /api/generate-images (Stability):", err);
+    return res.status(500).json({
+      error: "Failed to generate images.",
+      details: err?.message || String(err),
+    });
+  }
+});
 // 5. Start the Server
 app.listen(PORT, () => {
     console.log(`🚀 Server running at http://localhost:${PORT}`);
@@ -191,3 +201,4 @@ app.listen(PORT, () => {
 
 // NOTE: You will need to install dependencies:
 // npm install express body-parser node-fetch form-data
+
