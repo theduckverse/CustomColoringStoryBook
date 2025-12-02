@@ -729,50 +729,115 @@
   });
 
   // =================== GENERATE IMAGES (NO EXTRA CREDITS, PREVIEW ONLY) ===================
+    // Generate coloring images that really match the SAME child
   imagesBtn.addEventListener("click", async () => {
-    if (!lastBookData || !lastBookData.prompts || !lastBookData.prompts.length) return;
-
-    imagesBtn.disabled = true;
+    if (!lastBookData || !Array.isArray(lastBookData.prompts)) return;
 
     setStatus({
       icon: "🎨",
       title: "Making coloring pages…",
-      text: "Scribbles is creating black-and-white line-art pages for your book."
+      text: "Scribbles is drawing your line-art pages.",
     });
 
+    imagesBtn.disabled = true;
+
     try {
+      const title =
+        lastBookData.title ||
+        lastFormInputs?.title ||
+        "Children's story book";
+
+      // What the parent wrote about the main character
+      const mcRaw = (lastFormInputs?.mainCharacter || lastBookData.mainCharacter || "").trim();
+
+      // Shared character description used for ALL pages
+      const characterDescription =
+        mcRaw && mcRaw.length
+          ? `${mcRaw}. Draw them as the SAME child on every page: same face, same hairstyle, same skin tone, same height and age, and the same simple outfit (shorts and a t-shirt or a sports uniform that fits the story).`
+          : `a young child. Draw them as the SAME child on every page: same face, same hairstyle, same skin tone, same height and age, and the same simple outfit (shorts and a t-shirt).`;
+
+      const ageRange =
+        lastFormInputs?.ageRange ||
+        lastBookData.ageRange ||
+        "3-5";
+
+      // Turn each AI scene prompt into a full text prompt for Stability
+      const promptStrings = lastBookData.prompts.map((item, index) => {
+        const pageNumber = item.page || index + 1;
+        const sceneText =
+          item.prompt ||
+          item.description ||
+          (typeof item === "string" ? item : "") ||
+          `Scene ${pageNumber}`;
+
+        return (
+          `Black-and-white line-art coloring page for a children's story titled "${title}". ` +
+          `Main character: ${characterDescription} ` +
+          `Page ${pageNumber} scene: ${sceneText}. ` +
+          `The main character should clearly be the SAME child as on all other pages of this book. ` +
+          `Cartoon style, kid-friendly, big simple shapes, thick clean outlines, white background, no color or shading.`
+        );
+      });
+
       const res = await fetch("/api/generate-images", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompts: lastBookData.prompts })
+        body: JSON.stringify({ prompts: promptStrings }), // send strings, not objects
       });
-
-      const data = await res.json();
 
       if (!res.ok) {
-        // Billing / quota issue
-        if (res.status === 402 || (data && data.error === "Billing limit reached")) {
-          setStatus({
-            icon: "💳",
-            title: "Coloring pages are locked for now.",
-            text: "Scribbles needs a grown-up to turn on billing or raise the limit before he can draw new pages."
-          });
-          return;
-        }
-        throw new Error(data?.error || "Image request failed");
+        throw new Error("Bad response from /api/generate-images");
       }
 
-      renderImages(data.images || []);
+      const raw = await res.json();
+      console.log("Raw image payload:", raw);
+
+      const normalized = (raw.images || raw.data || [])
+        .map((item, i) => {
+          let url = item.url || item.image_url;
+          if (!url && item.b64_json) {
+            url = `data:image/png;base64,${item.b64_json}`;
+          }
+          if (!url) return null;
+          return { page: item.page || i + 1, url };
+        })
+        .filter(Boolean);
+
+      imagesGrid.innerHTML = "";
+      normalized.forEach((img) => {
+        const div = document.createElement("div");
+        div.className = "border rounded-xl p-2 bg-yellow-50";
+        div.innerHTML = `
+          <img src="${img.url}" class="w-full rounded mb-2 shadow" />
+          <p class="text-center text-sm">Page ${img.page}</p>
+        `;
+        imagesGrid.appendChild(div);
+      });
+
+      if (normalized.length > 0) {
+        imagesCard.classList.remove("hidden");
+        setStatus({
+          icon: "🎉",
+          title: "Coloring pages ready!",
+          text: "Scroll down to see your preview pages.",
+        });
+      } else {
+        setStatus({
+          icon: "⚠️",
+          title: "No images received",
+          text: "The image API did not return any images. Check the server logs.",
+        });
+      }
     } catch (err) {
-      console.error(err);
+      console.error("Image generation error:", err);
       setStatus({
         icon: "❌",
-        title: "Image generation failed.",
-        text: "Something went wrong while asking the AI for pictures. Try again later or check the server logs."
+        title: "Image generation failed",
+        text: "Try again or check the server.",
       });
-    } finally {
-      imagesBtn.disabled = false;
     }
+
+    imagesBtn.disabled = false;
   });
 
   // =================== NAV BUTTON BEHAVIOR ===================
