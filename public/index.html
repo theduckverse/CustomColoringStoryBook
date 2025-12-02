@@ -732,6 +732,9 @@
   imagesBtn.addEventListener("click", async () => {
     if (!lastBookData || !lastBookData.prompts || !lastBookData.prompts.length) return;
 
+      imagesBtn.addEventListener("click", async () => {
+    if (!lastBookData || !lastBookData.prompts || !lastBookData.prompts.length) return;
+
     imagesBtn.disabled = true;
 
     setStatus({
@@ -750,21 +753,22 @@
       const data = await res.json();
 
       if (!res.ok) {
-        // Billing / quota issue
-        if (res.status === 402 || (data && data.error === "Billing limit reached")) {
-          setStatus({
-            icon: "💳",
-            title: "Coloring pages are locked for now.",
-            text: "Scribbles needs a grown-up to turn on billing or raise the limit before he can draw new pages."
-          });
-          return;
-        }
-        throw new Error(data?.error || "Image request failed");
+        console.error("Image API error:", data);
+        // If billing / key / limit problem, show that
+        const msg =
+          (data && (data.details?.message || data.details || data.error)) ||
+          "Image generation failed.";
+        setStatus({
+          icon: "❌",
+          title: "Image generation failed.",
+          text: String(msg)
+        });
+        return;
       }
 
       renderImages(data.images || []);
     } catch (err) {
-      console.error(err);
+      console.error("Image generation failed:", err);
       setStatus({
         icon: "❌",
         title: "Image generation failed.",
