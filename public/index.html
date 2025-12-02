@@ -433,6 +433,14 @@
   const imagesCard = document.getElementById("images-card");
   const imagesGrid = document.getElementById("images-grid");
 
+  const navHome = document.getElementById("nav-home");
+  const navReading = document.getElementById("nav-reading");
+  const navMake = document.getElementById("nav-make");
+  const navFun = document.getElementById("nav-fun");
+  const navShelf = document.getElementById("nav-shelf");
+  const makeBookSection = document.getElementById("make-book-section");
+  const shelfSection = document.getElementById("shelf-section");
+
   let lastBookData = null;
 
   // =================== STATUS + LOADING ===================
@@ -728,11 +736,8 @@
     }
   });
 
-  // =================== GENERATE IMAGES (NO EXTRA CREDITS, PREVIEW ONLY) ===================
+  // =================== GENERATE IMAGES (PREVIEW ONLY) ===================
   imagesBtn.addEventListener("click", async () => {
-    if (!lastBookData || !lastBookData.prompts || !lastBookData.prompts.length) return;
-
-      imagesBtn.addEventListener("click", async () => {
     if (!lastBookData || !lastBookData.prompts || !lastBookData.prompts.length) return;
 
     imagesBtn.disabled = true;
@@ -754,7 +759,6 @@
 
       if (!res.ok) {
         console.error("Image API error:", data);
-        // If billing / key / limit problem, show that
         const msg =
           (data && (data.details?.message || data.details || data.error)) ||
           "Image generation failed.";
@@ -780,14 +784,6 @@
   });
 
   // =================== NAV BUTTON BEHAVIOR ===================
-  const navHome = document.getElementById("nav-home");
-  const navReading = document.getElementById("nav-reading");
-  const navMake = document.getElementById("nav-make");
-  const navFun = document.getElementById("nav-fun");
-  const navShelf = document.getElementById("nav-shelf");
-  const makeBookSection = document.getElementById("make-book-section");
-  const shelfSection = document.getElementById("shelf-section");
-
   function smoothScrollTo(el) {
     if (!el) return;
     el.scrollIntoView({ behavior: "smooth", block: "start" });
