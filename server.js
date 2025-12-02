@@ -222,13 +222,12 @@ app.post("/api/generate-images", async (req, res) => {
     return res.status(400).json({ error: "No prompts provided." });
   }
 
-  // Safety: limit how many coloring pages per request (controls cost & time)
+  // Safety: don't generate a million pages at once
   const maxImages = Math.min(prompts.length, 8);
 
   try {
     const images = [];
 
-    // Generate one image per page prompt
     for (let i = 0; i < maxImages; i++) {
       const item = prompts[i];
       const page = item.page || i + 1;
@@ -236,30 +235,36 @@ app.post("/api/generate-images", async (req, res) => {
 
       const fullPrompt = `
 ${basePrompt}
-Black and white line-art coloring page for children.
-Thick outlines, no shading, no background clutter.
-Simple, cute, kid-friendly style.
+Black-and-white line-art coloring page for young children.
+Thick outlines, no shading, simple shapes, minimal background clutter.
+Cute, friendly style.
       `.trim();
 
       const response = await openai.images.generate({
         model: "gpt-image-1",
         prompt: fullPrompt,
-        size: "1024x1024",
+        size: "1024x1024"
       });
 
-      const imageUrl = response.data[0]?.url;
-      images.push({ page, url: imageUrl });
+      const url = response.data[0]?.url;
+      images.push({ page, url });
     }
 
     return res.json({ images });
   } catch (err) {
+    // Log full details to Render logs
     console.error(
       "Error generating images:",
-      err.response?.data || err.message
+      err?.response?.data || err?.message || err
     );
-    return res.status(500).json({
+
+    // If OpenAI returned a response with a status (e.g. billing limit)
+    const status = err?.status || err?.response?.status || 500;
+    const details = err?.response?.data || err?.message || "Unknown error";
+
+    return res.status(status).json({
       error: "Image generation failed",
-      details: err.message,
+      details
     });
   }
 });
@@ -273,3 +278,4 @@ app.get("*", (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);
 });
+
