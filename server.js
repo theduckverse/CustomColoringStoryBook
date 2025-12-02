@@ -33,83 +33,82 @@ if (!STABILITY_API_KEY) {
 // =====================================================================
 
 // --- API: Generate Book (OpenAI-powered) ---
-app.post("/api/generate-book", async (req, res) => {
-  const { title, mainCharacter, storyIdea, ageRange, pageCount } = req.body || {};
+// --- API: Generate coloring page images that match the story exactly ---
+app.post("/api/generate-images", async (req, res) => {
+  const { prompts, character } = req.body || {};
 
-  if (!mainCharacter || !storyIdea) {
-    return res
-      .status(400)
-      .json({ error: "Missing required character or story idea." });
+  if (!Array.isArray(prompts) || prompts.length === 0) {
+    return res.status(400).json({ error: "No prompts provided." });
   }
 
-  // Normalize / sanitize inputs
-  const safeTitle =
-    title && title.trim().length > 0 ? title.trim() : "A Very Special Adventure";
-  const safeCharacter =
-    mainCharacter && mainCharacter.trim().length > 0
-      ? mainCharacter.trim()
-      : "a brave little hero";
-  const safeIdea = storyIdea.trim();
-  const safeAgeRange = ageRange || "3-5";
+  const maxImages = Math.min(prompts.length, 8);
 
-  const numPagesRaw = parseInt(pageCount, 10);
-  const numPages =
-    isNaN(numPagesRaw) ? 8 : Math.max(4, Math.min(numPagesRaw, 16));
-
-  // System prompt that controls story + illustration prompts
-  const systemPrompt = `
-You write cozy, gentle children's storybooks that can be turned into coloring books.
-
-Return ONLY valid JSON, no extra text, in this exact format:
-{
-  "title": string,
-  "tagline": string,
-  "ageRange": string,
-  "paragraphs": string[],
-  "prompts": [
-    { "page": number, "prompt": string }
-  ]
-}
-
-Story rules:
-- Reading level: around the given age range (simple sentences, warm tone).
-- 4–8 short paragraphs total (2–4 sentences each).
-- The story should center on the main character and their situation.
-
-Illustration prompt rules (VERY IMPORTANT):
-- "prompts" is for an image model (Stable Diffusion style).
-- Each prompt must describe a single, clear scene to draw as a black-and-white coloring page.
-- Each prompt MUST:
-  - Mention the main character by name.
-  - Mention if they are a child (for example: "a young boy named Leo" or "a little girl named Maya").
-  - Include visual details: approximate age, any important clothing or costume (like astronaut suit, pajamas, superhero cape, etc.), key props (teddy bear, rocket, bicycle, etc.), and the setting (bedroom, backyard, spaceship, forest, etc.).
-  - Reflect the theme of the book (for example, if the story idea involves astronauts, stars, rockets, or space, the prompts should clearly include those).
-- Prompts should be written like detailed camera directions, not like story text. Example style:
-  "Draw a young boy named Theo in cozy space pajamas, standing by a window in his bedroom, looking up at a starry sky with a toy rocket in his hand."
-- Use page numbers from 1 to pageCount.
-`.trim();
-
-  const userPrompt = `
-Create a children's story and illustration prompts for a custom coloring book.
-
-Title: "${safeTitle}"
-Main character: "${safeCharacter}"
-Story idea: "${safeIdea}"
-Age range: "${safeAgeRange}"
-Number of pages: ${numPages}
-
-Make the story reassuring and hopeful. The character faces this challenge but grows braver and more confident by the end.
-`.trim();
+  if (!STABILITY_API_KEY) {
+    return res.status(500).json({
+      error: "Missing STABILITY_API_KEY",
+    });
+  }
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4.1-mini",                      // You can swap to another OpenAI model if you like
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
+    const images = [];
+
+    for (let i = 0; i < maxImages; i++) {
+      const scenePrompt = prompts[i];
+      const page = i + 1;
+
+      // FINAL, STRONG prompt that Stability cannot ignore
+      const fullPrompt = `
+Black-and-white line-art coloring page.
+Cartoon style, cute, kid-friendly, thick outlines, no shading, no color.
+The SAME main character on every page:
+${character || "A young child. Same face, skin tone, clothing, and proportions every page."}
+
+Scene for page ${page}:
+${scenePrompt}
+
+Important:
+- Match the story scene exactly.
+- Keep the character consistent with previous images.
+- No backgrounds that conflict with the story.
+`.trim();
+
+      const form = new FormData();
+      form.append("prompt", fullPrompt);
+      form.append("output_format", "png");
+      form.append("aspect_ratio", "1:1");
+      form.append("model", "stable-image-core");
+
+      const response = await fetch(
+        "https://api.stability.ai/v2beta/stable-image/generate/core",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${STABILITY_API_KEY}`,
+            Accept: "image/*",
+          },
+          body: form,
+        }
+      );
+
+      if (!response.ok) {
+        console.error("Stability error:", await response.text());
+        continue;
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+      const base64 = Buffer.from(arrayBuffer).toString("base64");
+      images.push({ page, url: `data:image/png;base64,${base64}` });
+    }
+
+    res.json({ images });
+  } catch (err) {
+    console.error("Image error:", err);
+    return res.status(500).json({
+      error: "Failed to generate images",
+      details: err.message,
     });
+  }
+});
 
     const content = completion.choices[0]?.message?.content;
     if (!content) {
@@ -309,3 +308,4 @@ app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log("Serving static files from the 'public' directory.");
 });
+
