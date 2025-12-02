@@ -88,53 +88,67 @@ RULES:
 }
 
 // --- API: Generate book (story + prompts) ---
-app.post("/api/generate-book", async (req, res) => {
+app.post("/api/generate-images", async (req, res) => {
+  const { prompts, mainCharacter, title } = req.body || {};
+
+  if (!Array.isArray(prompts) || prompts.length === 0) {
+    return res.status(400).json({ error: "No prompts provided." });
+  }
+
+  const maxImages = Math.min(prompts.length, 8);
+
+  const characterLine = mainCharacter
+    ? `MAIN CHARACTER: ${mainCharacter}. This character must appear clearly and be the focus of the page. Keep the character's look consistent from page to page.`
+    : "";
+
+  const titleLine = title
+    ? `BOOK TITLE: "${title}".`
+    : "";
+
   try {
-    const { title, mainCharacter, storyIdea, ageRange, pageCount } =
-      req.body || {};
+    const images = [];
 
-    if (!mainCharacter && !storyIdea) {
-      return res.status(400).json({
-        error: "Please provide at least a mainCharacter or storyIdea.",
+    for (let i = 0; i < maxImages; i++) {
+      const item = prompts[i];
+      const page = item.page || i + 1;
+      const basePrompt = item.prompt || "";
+
+      const fullPrompt = `
+PAGE ${page} ILLUSTRATION.
+${titleLine}
+${characterLine}
+SCENE DESCRIPTION: ${basePrompt}
+
+STYLE:
+- Black-and-white line-art coloring page for young children
+- Thick outlines, no shading
+- Simple, cute, kid-friendly
+- No detailed shading, keep areas open for coloring
+      `.trim();
+
+      const result = await openai.images.generate({
+        model: "gpt-image-1",
+        prompt: fullPrompt,
+        size: "1024x1024"
       });
+
+      const imageUrl = result.data[0]?.url;
+      if (!imageUrl) continue;
+
+      images.push({ page, url: imageUrl });
     }
 
-    const prompt = buildPrompt({
-      title,
-      mainCharacter,
-      storyIdea,
-      ageRange,
-      pageCount,
-    });
-
-    const aiResponse = await openai.responses.create({
-      model: "gpt-4.1-mini",
-      input: prompt,
-    });
-
-    const raw = aiResponse.output[0].content[0].text;
-    let parsed;
-
-    try {
-      parsed = JSON.parse(raw);
-    } catch (err) {
-      console.error("JSON parse error, returning fallback shape.", err);
-      parsed = {
-        title: title || "Your Custom Story",
-        tagline: "",
-        ageRange: ageRange || "",
-        paragraphs: [raw],
-        prompts: [],
-      };
+    if (!images.length) {
+      return res.status(500).json({ error: "No images generated." });
     }
 
-    if (!Array.isArray(parsed.paragraphs)) parsed.paragraphs = [];
-    if (!Array.isArray(parsed.prompts)) parsed.prompts = [];
-
-    return res.json(parsed);
+    return res.json({ images });
   } catch (err) {
-    console.error("Error in /api/generate-book:", err);
-    return res.status(500).json({ error: "Failed to generate book." });
+    console.error("Error in /api/generate-images:", err);
+    return res.status(500).json({
+      error: "Image generation failed.",
+      details: err.message
+    });
   }
 });
 
@@ -317,6 +331,7 @@ app.get("*", (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);
 });
+
 
 
 
