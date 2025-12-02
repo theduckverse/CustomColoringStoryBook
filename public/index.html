@@ -209,7 +209,8 @@
   const imagesCard = document.getElementById("images-card");
   const imagesGrid = document.getElementById("images-grid");
 
-  let lastBookData = null;
+  let lastBookData = null;        // what the API returned
+  let lastFormInputs = null;      // what the parent typed
 
   function setStatus(obj) {
     statusIcon.textContent = obj.icon;
@@ -220,91 +221,152 @@
   function setLoading(isLoading) {
     generateBtn.disabled = isLoading;
     generateBtnSpinner.classList.toggle("hidden", !isLoading);
-    generateBtnLabel.textContent = isLoading ? "Generating…" : "✨ Generate Book (1 credit)";
+    generateBtnLabel.textContent = isLoading
+      ? "Generating…"
+      : "✨ Generate Book (1 credit)";
   }
 
   function renderBook(data) {
-    storyTitleEl.textContent = data.title;
-    storyTaglineEl.textContent = data.tagline;
+    // Basic guards so we don't crash if the backend returns something weird
+    const safeTitle = data.title || (lastFormInputs?.title || "Your Custom Story");
+    const safeTagline = data.tagline || "";
+    const safeParagraphs = Array.isArray(data.paragraphs) ? data.paragraphs : [];
+    const safePrompts = Array.isArray(data.prompts) ? data.prompts : [];
+
+    storyTitleEl.textContent = safeTitle;
+    storyTaglineEl.textContent = safeTagline;
 
     storyBodyEl.innerHTML = "";
-    data.paragraphs.forEach(p => {
+    safeParagraphs.forEach((p) => {
       const el = document.createElement("p");
       el.textContent = p;
       storyBodyEl.appendChild(el);
     });
 
     promptsList.innerHTML = "";
-    data.prompts.forEach(item => {
+    safePrompts.forEach((item) => {
+      const pageNumber = item.page ?? item.pageNumber ?? "?";
+      const text =
+        item.prompt ||
+        item.description ||
+        (typeof item === "string" ? item : "");
       const li = document.createElement("li");
-      li.innerHTML = `<strong>Page ${item.page}:</strong> ${item.prompt}`;
+      li.innerHTML = `<strong>Page ${pageNumber}:</strong> ${text}`;
       promptsList.appendChild(li);
     });
 
     storyCard.classList.remove("hidden");
     promptsCard.classList.remove("hidden");
 
-    lastBookData = data;
+    // Store merged data so images can use *both* AI output + form info
+    lastBookData = {
+      ...data,
+      prompts: safePrompts,
+    };
+
     downloadBtn.disabled = false;
     imagesBtn.disabled = false;
 
     setStatus({
       icon: "📖",
       title: "Your storybook is ready!",
-      text: "Now you can generate coloring pages or download the PDF."
+      text: "Now you can generate coloring pages or download the PDF.",
     });
   }
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const title = document.getElementById("title").value;
-    const mainCharacter = document.getElementById("main-character").value;
-    const storyIdea = document.getElementById("story-idea").value;
+    const title = document.getElementById("title").value.trim();
+    const mainCharacter = document.getElementById("main-character").value.trim();
+    const storyIdea = document.getElementById("story-idea").value.trim();
     const ageRange = document.getElementById("age-range").value;
     const pageCount = document.getElementById("page-count").value;
+
+    // Remember what the parent typed so the image prompts can match
+    lastFormInputs = { title, mainCharacter, storyIdea, ageRange, pageCount };
 
     setLoading(true);
     setStatus({
       icon: "✨",
       title: "Creating your storybook…",
-      text: "Scribbles is writing a cozy story."
+      text: "Scribbles is writing a cozy story.",
     });
 
     try {
       const res = await fetch("/api/generate-book", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, mainCharacter, storyIdea, ageRange, pageCount })
+        body: JSON.stringify({
+          title,
+          mainCharacter,
+          storyIdea,
+          ageRange,
+          pageCount,
+        }),
       });
+
+      if (!res.ok) {
+        throw new Error("Bad response from /api/generate-book");
+      }
 
       const data = await res.json();
       renderBook(data);
-
     } catch (err) {
-      setStatus({ icon: "❌", title: "Error", text: "Could not generate your book." });
+      console.error("Book generation error:", err);
+      setStatus({
+        icon: "❌",
+        title: "Error",
+        text: "Could not generate your book. Please check the server.",
+      });
     }
 
     setLoading(false);
   });
 
   imagesBtn.addEventListener("click", async () => {
-    if (!lastBookData) return;
+    if (!lastBookData || !Array.isArray(lastBookData.prompts)) return;
 
     setStatus({
       icon: "🎨",
       title: "Making coloring pages…",
-      text: "Scribbles is drawing your line-art pages."
+      text: "Scribbles is drawing your line-art pages.",
     });
 
     imagesBtn.disabled = true;
 
     try {
+      // Build prompts that actually match THIS story and THIS character
+      const title = lastFormInputs?.title || lastBookData.title || "Your Story";
+      const character =
+        lastFormInputs?.mainCharacter ||
+        lastBookData.mainCharacter ||
+        "the main character";
+      const ageRange = lastFormInputs?.ageRange || "kids";
+
+      const promptStrings = lastBookData.prompts.map((item, index) => {
+        const sceneText =
+          item.prompt ||
+          item.description ||
+          (typeof item === "string" ? item : "") ||
+          `Scene ${index + 1}`;
+
+        return (
+          `Black and white line-art coloring page for a children's book titled "${title}". ` +
+          `Age range ${ageRange}. Focus on ${character}. ` +
+          `Scene: ${sceneText}. No color, clean outlines, simple background.`
+        );
+      });
+
       const res = await fetch("/api/generate-images", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompts: lastBookData.prompts })
+        body: JSON.stringify({ prompts: promptStrings }),
       });
+
+      if (!res.ok) {
+        throw new Error("Bad response from /api/generate-images");
+      }
 
       const raw = await res.json();
       console.log("Raw image payload:", raw);
@@ -326,7 +388,7 @@
       console.log("Normalized:", normalized);
 
       imagesGrid.innerHTML = "";
-      normalized.forEach(img => {
+      normalized.forEach((img) => {
         const div = document.createElement("div");
         div.className = "border rounded-xl p-2 bg-yellow-50";
         div.innerHTML = `
@@ -336,20 +398,26 @@
         imagesGrid.appendChild(div);
       });
 
-      imagesCard.classList.remove("hidden");
-
-      setStatus({
-        icon: "🎉",
-        title: "Coloring pages ready!",
-        text: "Scroll down to see your preview pages."
-      });
-
+      if (normalized.length > 0) {
+        imagesCard.classList.remove("hidden");
+        setStatus({
+          icon: "🎉",
+          title: "Coloring pages ready!",
+          text: "Scroll down to see your preview pages.",
+        });
+      } else {
+        setStatus({
+          icon: "⚠️",
+          title: "No images received",
+          text: "The image API did not return any images. Check the server logs.",
+        });
+      }
     } catch (err) {
-      console.error(err);
+      console.error("Image generation error:", err);
       setStatus({
         icon: "❌",
         title: "Image generation failed",
-        text: "Try again or check the server."
+        text: "Try again or check the server.",
       });
     }
 
