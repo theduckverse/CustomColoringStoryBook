@@ -1,188 +1,248 @@
-// server.js - Magic Story Colorbooks backend
+// server.js - Final version
 
-// 1. Core Imports
+// 1. Core imports
 const express = require("express");
 const bodyParser = require("body-parser");
-const fetch = require("node-fetch");       // For HTTP calls to Stability
-const FormData = require("form-data");     // For multipart form-data to Stability
-const OpenAI = require("openai");          // Official OpenAI SDK
+const fetch = require("node-fetch"); // v2.x, CJS
+const FormData = require("form-data");
 
-// 2. OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,      // Set this in Render
-});
-
-// 3. Express setup
 const app = express();
-const PORT = process.env.PORT || 3000;     // Render provides PORT
+const PORT = process.env.PORT || 3000;
 
-// Middleware
-app.use(bodyParser.json());
-// Serve your frontend (index.html, Scribbles.jpg, shelf.png, etc.)
-app.use(express.static("public"));
+// 2. Middleware
+app.use(bodyParser.json({ limit: "1mb" }));
+app.use(express.static("public")); // serves index.html, Scribbles.jpg, etc.
 
-// 4. Environment variables for Stability
+// 3. Environment variables
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const STABILITY_API_KEY = process.env.STABILITY_API_KEY;
 
+if (!OPENAI_API_KEY) {
+  console.warn(
+    "⚠️ OPENAI_API_KEY is not set. /api/generate-book will fall back to a simple template."
+  );
+}
 if (!STABILITY_API_KEY) {
-  console.warn("⚠️ STABILITY_API_KEY is not set. /api/generate-images will fail.");
+  console.warn(
+    "⚠️ STABILITY_API_KEY is not set. /api/generate-images will fail."
+  );
+}
+
+// ---------------------------------------------------------------------
+// Helper: fallback story generator (no OpenAI)
+// ---------------------------------------------------------------------
+function buildTemplateBook({ title, mainCharacter, storyIdea, ageRange, pageCount }) {
+  const safeTitle =
+    title && title.trim().length > 0 ? title.trim() : "A Very Special Adventure";
+  const safeCharacter =
+    mainCharacter && mainCharacter.trim().length > 0
+      ? mainCharacter.trim()
+      : "a brave little hero";
+  const safeIdea =
+    storyIdea && storyIdea.trim().length > 0
+      ? storyIdea.trim()
+      : "a small everyday problem that feels big at first";
+  const safeAgeRange = ageRange || "3–5";
+  const numPagesRaw = parseInt(pageCount, 10);
+  const numPages =
+    Number.isNaN(numPagesRaw) ? 8 : Math.max(4, Math.min(numPagesRaw, 16));
+
+  const paragraphs = [
+    `${safeCharacter} has a big imagination, but lately something has been on their mind: ${safeIdea}. Every day, it feels a little bit bigger and a little bit harder to ignore.`,
+    `One day, ${safeCharacter} decides something has to change. They take a deep breath, look around, and wonder if maybe there is more help and magic waiting just outside their comfort zone.`,
+    `As the adventure begins, ${safeCharacter} meets new friends and discovers small, brave steps they can take. Each step makes the problem feel just a tiny bit smaller and their heart a lot more confident.`,
+    `Along the way, ${safeCharacter} learns that it's okay to feel nervous and it's okay to ask for help. The journey shows them that they are never really alone, even when things seem scary or confusing.`,
+    `By the end of the adventure, ${safeCharacter} realizes that ${safeIdea.toLowerCase()} doesn’t have to be a scary thing anymore. They feel proud, calm, and ready for the next cozy adventure.`,
+  ];
+
+  const prompts = [];
+  for (let i = 1; i <= numPages; i++) {
+    let promptText;
+    if (i === 1) {
+      promptText = `${safeCharacter} looking thoughtful in a cozy room, thinking about: ${safeIdea}.`;
+    } else if (i === 2) {
+      promptText = `${safeCharacter} taking a brave first step on their new adventure related to: ${safeIdea}.`;
+    } else if (i === 3) {
+      promptText = `${safeCharacter} meeting a friendly helper or guide who makes them feel safer and more confident.`;
+    } else if (i === 4) {
+      promptText = `${safeCharacter} practicing a small, brave action that helps them with ${safeIdea.toLowerCase()}.`;
+    } else if (i === numPages) {
+      promptText = `${safeCharacter} feeling proud and calm at the end of the story, showing how they have grown and found courage.`;
+    } else {
+      promptText = `${safeCharacter} in a gentle scene that continues their adventure about ${safeIdea.toLowerCase()}, looking curious and hopeful.`;
+    }
+    prompts.push({ page: i, prompt: promptText });
+  }
+
+  const tagline = `A cozy story for ages ${safeAgeRange} about ${safeIdea.toLowerCase()}.`;
+
+  return {
+    title: safeTitle,
+    tagline,
+    ageRange: safeAgeRange,
+    mainCharacter: safeCharacter,
+    storyIdea: safeIdea,
+    paragraphs,
+    prompts,
+  };
 }
 
 // =====================================================================
-// 5. API ROUTES
+// 4. API ROUTES
 // =====================================================================
 
-// --- API: Generate Book (OpenAI-powered) ---
-// --- API: Generate coloring page images that match the story exactly ---
-app.post("/api/generate-images", async (req, res) => {
-  const { prompts, character } = req.body || {};
+// --- API: Generate Book (OpenAI with JSON output, fallback to template) ---
+app.post("/api/generate-book", async (req, res) => {
+  const { title, mainCharacter, storyIdea, ageRange, pageCount } = req.body || {};
 
-  if (!Array.isArray(prompts) || prompts.length === 0) {
-    return res.status(400).json({ error: "No prompts provided." });
+  if (!mainCharacter && !storyIdea) {
+    return res
+      .status(400)
+      .json({ error: "Please provide a mainCharacter and/or storyIdea." });
   }
 
-  const maxImages = Math.min(prompts.length, 8);
-
-  if (!STABILITY_API_KEY) {
-    return res.status(500).json({
-      error: "Missing STABILITY_API_KEY",
+  // Use fallback template if no OpenAI key
+  if (!OPENAI_API_KEY) {
+    const book = buildTemplateBook({
+      title,
+      mainCharacter,
+      storyIdea,
+      ageRange,
+      pageCount,
     });
+    return res.json(book);
   }
 
   try {
-    const images = [];
+    const safeTitle =
+      title && title.trim().length > 0 ? title.trim() : "Magic Story Colorbook";
+    const safeCharacter =
+      mainCharacter && mainCharacter.trim().length > 0
+        ? mainCharacter.trim()
+        : "a child with a big feeling";
+    const safeIdea =
+      storyIdea && storyIdea.trim().length > 0
+        ? storyIdea.trim()
+        : "a gentle everyday problem that feels big";
+    const safeAgeRange = ageRange || "3–5";
+    const rawPages = parseInt(pageCount, 10);
+    const numPages =
+      Number.isNaN(rawPages) ? 8 : Math.max(4, Math.min(rawPages, 16));
 
-    for (let i = 0; i < maxImages; i++) {
-      const scenePrompt = prompts[i];
-      const page = i + 1;
-
-      // FINAL, STRONG prompt that Stability cannot ignore
-      const fullPrompt = `
-Black-and-white line-art coloring page.
-Cartoon style, cute, kid-friendly, thick outlines, no shading, no color.
-The SAME main character on every page:
-${character || "A young child. Same face, skin tone, clothing, and proportions every page."}
-
-Scene for page ${page}:
-${scenePrompt}
-
-Important:
-- Match the story scene exactly.
-- Keep the character consistent with previous images.
-- No backgrounds that conflict with the story.
-`.trim();
-
-      const form = new FormData();
-      form.append("prompt", fullPrompt);
-      form.append("output_format", "png");
-      form.append("aspect_ratio", "1:1");
-      form.append("model", "stable-image-core");
-
-      const response = await fetch(
-        "https://api.stability.ai/v2beta/stable-image/generate/core",
+    const openaiBody = {
+      model: "gpt-4o-mini",
+      temperature: 0.8,
+      response_format: { type: "json_object" },
+      messages: [
         {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${STABILITY_API_KEY}`,
-            Accept: "image/*",
-          },
-          body: form,
-        }
-      );
+          role: "system",
+          content:
+            "You are a cozy children's picture-book author. You write gentle, encouraging stories for kids ages 3–9, and you also design picture prompts for a coloring book version. Always respond with STRICT JSON only.",
+        },
+        {
+          role: "user",
+          content: JSON.stringify({
+            instruction: "Write a comforting kids' story and page-by-page prompts.",
+            title: safeTitle,
+            mainCharacter: safeCharacter,
+            storyIdea: safeIdea,
+            ageRange: safeAgeRange,
+            pageCount: numPages,
+          }),
+        },
+      ],
+    };
 
-      if (!response.ok) {
-        console.error("Stability error:", await response.text());
-        continue;
-      }
-
-      const arrayBuffer = await response.arrayBuffer();
-      const base64 = Buffer.from(arrayBuffer).toString("base64");
-      images.push({ page, url: `data:image/png;base64,${base64}` });
-    }
-
-    res.json({ images });
-  } catch (err) {
-    console.error("Image error:", err);
-    return res.status(500).json({
-      error: "Failed to generate images",
-      details: err.message,
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify(openaiBody),
     });
-  }
-});
 
-    const content = completion.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error("No content returned from OpenAI");
+    if (!response.ok) {
+      console.error("OpenAI error:", await response.text());
+      const fallbackBook = buildTemplateBook({
+        title,
+        mainCharacter,
+        storyIdea,
+        ageRange,
+        pageCount,
+      });
+      return res.json(fallbackBook);
     }
 
-    let book;
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content || "{}";
+
+    let parsed;
     try {
-      book = JSON.parse(content);
-    } catch (parseErr) {
-      console.error("JSON parse error from OpenAI:", parseErr, content);
-      return res
-        .status(500)
-        .json({ error: "Failed to parse story from AI response." });
+      parsed = JSON.parse(content);
+    } catch (err) {
+      console.error("JSON parse error from OpenAI:", err, content);
+      parsed = {};
     }
 
-    // Light safety checks / normalization
-    if (!Array.isArray(book.paragraphs)) book.paragraphs = [];
-    if (!Array.isArray(book.prompts)) book.prompts = [];
+    // Expecting structure:
+    // {
+    //   "title": "...",
+    //   "tagline": "...",
+    //   "ageRange": "...",
+    //   "paragraphs": [...],
+    //   "prompts": [{ "page": 1, "prompt": "..." }, ...]
+    // }
 
-    // Ensure prompts are limited & have page numbers
-    book.prompts = book.prompts
-      .slice(0, numPages)
-      .map((p, idx) => ({
-        page: typeof p.page === "number" ? p.page : idx + 1,
-        prompt: p.prompt || "",
-      }))
-      .filter((p) => p.prompt && typeof p.prompt === "string");
-
-    // Fill in any missing metadata
-    book.title = book.title || safeTitle;
-    book.tagline =
-      book.tagline ||
-      `A cozy story for ages ${safeAgeRange} about ${safeIdea.toLowerCase()}.`;
-    book.ageRange = book.ageRange || safeAgeRange;
+    const book = {
+      title: parsed.title || safeTitle,
+      tagline:
+        parsed.tagline ||
+        `A cozy story for ages ${safeAgeRange} about ${safeIdea.toLowerCase()}.`,
+      ageRange: parsed.ageRange || safeAgeRange,
+      mainCharacter: safeCharacter,
+      storyIdea: safeIdea,
+      paragraphs:
+        Array.isArray(parsed.paragraphs) && parsed.paragraphs.length > 0
+          ? parsed.paragraphs
+          : buildTemplateBook({
+              title,
+              mainCharacter,
+              storyIdea,
+              ageRange,
+              pageCount,
+            }).paragraphs,
+      prompts:
+        Array.isArray(parsed.prompts) && parsed.prompts.length > 0
+          ? parsed.prompts.map((p, i) => ({
+              page: p.page || i + 1,
+              prompt: p.prompt || String(p),
+            }))
+          : buildTemplateBook({
+              title,
+              mainCharacter,
+              storyIdea,
+              ageRange,
+              pageCount,
+            }).prompts,
+    };
 
     return res.json(book);
   } catch (err) {
-    console.error("OpenAI /api/generate-book error:", err);
-
-    // Fallback so UI still works if AI fails
-    const fallbackParagraphs = [
-      `${safeCharacter} has a big imagination, but lately something has been on their mind: ${safeIdea}. Every day, that feeling seems a little bit bigger and a little harder to ignore.`,
-      `One day, ${safeCharacter} decides something has to change. They take a deep breath and wonder if there might be a new, braver way to move through the day.`,
-      `As the adventure begins, ${safeCharacter} meets new friends and discovers small, brave steps they can take. Each tiny step makes the big feeling a little smaller.`,
-      `By the end of the adventure, ${safeCharacter} realizes that the worry that once felt huge now feels lighter. They feel proud, calm, and ready for the next cozy adventure.`,
-    ];
-
-    const fallbackPrompts = [];
-    for (let i = 1; i <= numPages; i++) {
-      let promptText;
-      if (i === 1) {
-        promptText = `Draw ${safeCharacter} in a cozy room, clearly a child, thinking about ${safeIdea}, with a comforting object nearby (like a stuffed animal or favorite toy).`;
-      } else if (i === numPages) {
-        promptText = `Draw ${safeCharacter}, still a child, looking proud and calm at the end of the story, showing how much braver they have become, in a simple safe setting.`;
-      } else {
-        promptText = `Draw ${safeCharacter} on their gentle adventure, taking small brave steps and meeting kind helpers, in a simple kid-friendly scene.`;
-      }
-      fallbackPrompts.push({ page: i, prompt: promptText });
-    }
-
-    return res.json({
-      title: safeTitle,
-      tagline: `A cozy story for ages ${safeAgeRange} about ${safeIdea.toLowerCase()}.`,
-      ageRange: safeAgeRange,
-      paragraphs: fallbackParagraphs,
-      prompts: fallbackPrompts,
+    console.error("Error in /api/generate-book:", err);
+    const fallbackBook = buildTemplateBook({
+      title,
+      mainCharacter,
+      storyIdea,
+      ageRange,
+      pageCount,
     });
+    return res.json(fallbackBook);
   }
 });
 
-// --- API: Export PDF (Placeholder) ---
+// --- API: Export PDF (placeholder) ---
 app.post("/api/export-pdf", async (req, res) => {
-  // TODO: Replace with real PDF generation (pdfkit / Puppeteer, etc.)
   const mockPdfContent = "This is a placeholder PDF file content.";
   res.setHeader("Content-Type", "application/pdf");
   res.setHeader(
@@ -192,9 +252,9 @@ app.post("/api/export-pdf", async (req, res) => {
   res.send(Buffer.from(mockPdfContent, "utf-8"));
 });
 
-// --- API: Generate coloring-page images with Stability AI ---
+// --- API: Generate coloring page images that match the story ---
 app.post("/api/generate-images", async (req, res) => {
-  const { prompts } = req.body || {};
+  const { prompts, character } = req.body || {};
 
   if (!Array.isArray(prompts) || prompts.length === 0) {
     return res.status(400).json({ error: "No prompts provided." });
@@ -213,41 +273,31 @@ app.post("/api/generate-images", async (req, res) => {
     const images = [];
 
     for (let i = 0; i < maxImages; i++) {
-      const rawItem = prompts[i];
-      let page = i + 1;
-      let basePrompt = "";
+      const scenePrompt = prompts[i] || "";
+      const page = i + 1;
 
-      // Support either:
-      //  - plain strings
-      //  - { page, prompt } objects
-      if (typeof rawItem === "string") {
-        basePrompt = rawItem;
-      } else if (rawItem && typeof rawItem === "object") {
-        page = rawItem.page || page;
-        basePrompt =
-          rawItem.prompt ||
-          rawItem.description ||
-          "";
-      }
-
-      if (!basePrompt) continue;
-
+      // Strong, explicit prompt for Stability
       const fullPrompt = `
-${basePrompt}
+Black-and-white line-art coloring page.
+Cartoon style, cute, kid-friendly, big simple shapes.
+Thick clean outlines, white background, no color, no shading, no gradients.
 
-Line-art coloring page illustration for a children's storybook.
-Black-and-white ONLY, white background.
-Simple cartoon style, big clear shapes, thick clean outlines.
-No color, no grey, no shading, no gradients, no textures, no cross-hatching.
-Focus on the main character and the scene from the story, kid-friendly and easy to color.
+Main character (must stay consistent on every page):
+${character ||
+  "A friendly storybook child. Same face or animal features, same hairstyle/fur, same clothing or markings, same approximate age/size on every page."}
+
+This image must illustrate PAGE ${page} of the story.
+Scene to draw (match this moment exactly):
+${scenePrompt}
+
+Important:
+- Keep the main character clearly the same as on all other pages.
+- Show the emotion and action described in the scene.
+- Background details should fit a cozy kids' book, not be too busy.
       `.trim();
 
       const form = new FormData();
       form.append("prompt", fullPrompt);
-      form.append(
-        "negative_prompt",
-        "full color, colored, realistic lighting, photo, 3d render, painting, gradients, heavy shading, grayscale fill, background color"
-      );
       form.append("output_format", "png");
       form.append("aspect_ratio", "1:1");
       form.append("model", "stable-image-core");
@@ -279,9 +329,10 @@ Focus on the main character and the scene from the story, kid-friendly and easy 
 
       const arrayBuffer = await response.arrayBuffer();
       const base64 = Buffer.from(arrayBuffer).toString("base64");
-      const dataUrl = `data:image/png;base64,${base64}`;
-
-      images.push({ page, url: dataUrl });
+      images.push({
+        page,
+        url: `data:image/png;base64,${base64}`,
+      });
     }
 
     if (images.length === 0) {
@@ -293,7 +344,7 @@ Focus on the main character and the scene from the story, kid-friendly and easy 
 
     return res.json({ images });
   } catch (err) {
-    console.error("Error in /api/generate-images (Stability):", err);
+    console.error("Error in /api/generate-images:", err);
     return res.status(500).json({
       error: "Failed to generate images.",
       details: err?.message || String(err),
@@ -301,11 +352,8 @@ Focus on the main character and the scene from the story, kid-friendly and easy 
   }
 });
 
-// =====================================================================
-// 6. Start the server
-// =====================================================================
+// 5. Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log("Serving static files from the 'public' directory.");
 });
-
