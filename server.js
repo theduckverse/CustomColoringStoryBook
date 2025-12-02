@@ -56,7 +56,7 @@ app.post("/api/generate-book", async (req, res) => {
   const numPages =
     isNaN(numPagesRaw) ? 8 : Math.max(4, Math.min(numPagesRaw, 16));
 
-  const systemPrompt = `
+const systemPrompt = `
 You write cozy, gentle children's storybooks that can be turned into coloring books.
 
 Return ONLY valid JSON, no extra text, in this exact format:
@@ -70,12 +70,21 @@ Return ONLY valid JSON, no extra text, in this exact format:
   ]
 }
 
-Rules:
+Story rules:
 - Reading level: around the given age range (simple sentences, warm tone).
 - 4–8 short paragraphs total (2–4 sentences each).
 - The story should center on the main character and their situation.
-- "prompts" should describe what to draw on each page as a black-and-white coloring page.
-- Each prompt must mention the main character by name and describe a clear scene.
+
+Illustration prompt rules (VERY IMPORTANT):
+- "prompts" is for an image model (Stable Diffusion style).
+- Each prompt must describe a **single, clear scene** to draw as a black-and-white coloring page.
+- Each prompt MUST:
+  - Mention the main character by name.
+  - Mention if they are a child (for example: "a young boy named Leo" or "a little girl named Maya").
+  - Include visual details: approximate age, any important clothing or costume (like astronaut suit, pajamas, superhero cape, etc.), key props (teddy bear, rocket, bicycle, etc.), and the setting (bedroom, backyard, spaceship, forest, etc.).
+  - Reflect the theme of the book (for example, if the story idea involves astronauts, stars, rockets, or space, the prompts should clearly include those).
+- Prompts should be written like detailed camera directions, not like story text. Example style:
+  "Draw a young boy named Theo in cozy space pajamas, standing by a window in his bedroom, looking up at a starry sky with a toy rocket in his hand."
 - Use page numbers from 1 to pageCount.
 `;
 
@@ -285,3 +294,4 @@ app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
   console.log("Serving static files from the 'public' directory.");
 });
+
