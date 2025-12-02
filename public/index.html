@@ -186,14 +186,17 @@
           <div id="story-body" class="space-y-3 text-yellow-900"></div>
         </div>
 
- <!-- STORY PAGES (SHELF VIEW) -->
 <div id="prompts-card"
-     class="hidden bg-white rounded-2xl p-5 border border-yellow-300 shadow">
+     class="hidden bg-white rounded-2xl p-5 border border-yellow-300 shadow relative">
+
   <h3 class="text-xl font-bold text-yellow-900">Story pages</h3>
-  <p class="text-sm text-yellow-700 mb-2">
-    Each page is a little slice of the story, sitting on a cozy bookshelf.
-  </p>
-  <div id="pages-shelf" class="grid sm:grid-cols-2 gap-3"></div>
+
+  <div id="pages-shelf"
+       class="mt-4 grid sm:grid-cols-2 gap-6 relative z-10"></div>
+
+  <!-- real illustrated shelf -->
+  <img src="/shelf.png"
+       class="absolute left-0 right-0 bottom-0 w-full h-10 object-cover z-0 pointer-events-none" />
 </div>
         <!-- COLORING IMAGES -->
         <div id="images-card"
