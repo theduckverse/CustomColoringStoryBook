@@ -44,9 +44,8 @@ function buildPrompt({ title, mainCharacter, storyIdea, ageRange, pageCount }) {
       : "They learn to feel safe at night with help from gentle forest friends and cozy night lights.";
 
   const pages = Number(pageCount) || 8;
-  const age = ageRange || "3-5";
+  const age = ageRange || "3–5";
 
-  // Strong JSON instructions
   return `
 You are a gentle children's author and coloring-book designer.
 
@@ -90,7 +89,6 @@ DETAILS:
 }
 
 // ---------------- API: GENERATE BOOK ----------------
-// ---------------- API: GENERATE BOOK ----------------
 app.post("/api/generate-book", async (req, res) => {
   try {
     const { title, mainCharacter, storyIdea, ageRange, pageCount } =
@@ -110,9 +108,8 @@ app.post("/api/generate-book", async (req, res) => {
       pageCount,
     });
 
-    // Use classic chat completions (very stable)
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini", // or "gpt-4.1-mini" if you prefer
+      model: "gpt-4.1-mini",
       messages: [
         {
           role: "user",
@@ -122,14 +119,27 @@ app.post("/api/generate-book", async (req, res) => {
       temperature: 0.7,
     });
 
-    const rawText = completion.choices?.[0]?.message?.content || "";
-    let parsed;
+    let rawText = completion.choices?.[0]?.message?.content || "";
+    rawText = rawText.trim();
 
+    // Strip ```json ... ``` if the model wraps it
+    if (rawText.startsWith("```")) {
+      const firstNewline = rawText.indexOf("\n");
+      if (firstNewline !== -1) {
+        rawText = rawText.slice(firstNewline + 1);
+      }
+      if (rawText.endsWith("```")) {
+        rawText = rawText.slice(0, -3);
+      }
+      rawText = rawText.trim();
+    }
+
+    let parsed;
     try {
       parsed = JSON.parse(rawText);
     } catch (err) {
-      console.error("JSON parse error from model, raw text:", rawText);
-      // Fallback so the UI still shows something
+      console.error("JSON parse error from model, raw text:\n", rawText);
+      // Fallback so UI still shows something
       parsed = {
         title: title || "Your Custom Story",
         tagline: "",
@@ -144,7 +154,7 @@ app.post("/api/generate-book", async (req, res) => {
 
     return res.json(parsed);
   } catch (err) {
-    console.error("Error in /api/generate-book:", err);
+    console.error("Error in /api/generate-book:", err.response?.data || err);
     return res.status(500).json({ error: "Failed to generate book." });
   }
 });
@@ -268,7 +278,7 @@ STYLE:
 
     return res.json({ images });
   } catch (err) {
-    console.error("Error in /api/generate-images:", err);
+    console.error("Error in /api/generate-images:", err.response?.data || err);
     return res.status(500).json({
       error: "Image generation failed.",
       details: err.message,
@@ -285,4 +295,3 @@ app.get("*", (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);
 });
-
