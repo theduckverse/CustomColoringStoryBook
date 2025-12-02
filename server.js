@@ -1,52 +1,93 @@
-// --- API: Generate book (story + prompts) ---
-app.post("/api/generate-book", async (req, res) => {
-  try {
-    const { title, mainCharacter, storyIdea, ageRange, pageCount } = req.body || {};
+// --- API: Generate coloring-page images with Stability AI (Stable Diffusion) ---
+const STABILITY_API_KEY = process.env.STABILITY_API_KEY;
 
-    if (!mainCharacter && !storyIdea) {
-      return res.status(400).json({
-        error: "Please provide at least a mainCharacter or storyIdea."
+if (!STABILITY_API_KEY) {
+  console.warn("⚠️ STABILITY_API_KEY is not set. /api/generate-images will fail.");
+}
+
+app.post("/api/generate-images", async (req, res) => {
+  const { prompts } = req.body || {};
+
+  if (!Array.isArray(prompts) || prompts.length === 0) {
+    return res.status(400).json({ error: "No prompts provided." });
+  }
+
+  // Safety: don’t let someone request 100 pages at once
+  const maxImages = Math.min(prompts.length, 8);
+
+  if (!STABILITY_API_KEY) {
+    return res.status(500).json({
+      error: "Image generation not configured.",
+      details: "Missing STABILITY_API_KEY on the server.",
+    });
+  }
+
+  try {
+    const images = [];
+
+    for (let i = 0; i < maxImages; i++) {
+      const item = prompts[i];
+      const page = item.page || i + 1;
+      const basePrompt = item.prompt || "";
+
+      const fullPrompt = `
+${basePrompt}
+Black-and-white line-art coloring page for young children.
+Thick outlines, no shading, simple background, kid-friendly, clean coloring-book style.
+      `.trim();
+
+      // Build multipart/form-data payload
+      const form = new FormData();
+      form.append("prompt", fullPrompt);
+      form.append("output_format", "png");
+      form.append("aspect_ratio", "1:1");
+      // Optional: push it toward line-art style
+      // Only works on some models, but harmless if ignored
+      form.append("model", "stable-image-core");
+
+      const response = await fetch(
+        "https://api.stability.ai/v2beta/stable-image/generate/core",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${STABILITY_API_KEY}`,
+            Accept: "image/*",
+          },
+          body: form,
+        }
+      );
+
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error(
+          `Stability image error for page ${page}:`,
+          response.status,
+          errText
+        );
+        // Skip this page, continue with others
+        continue;
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+      const base64 = Buffer.from(arrayBuffer).toString("base64");
+      const dataUrl = `data:image/png;base64,${base64}`;
+
+      images.push({ page, url: dataUrl });
+    }
+
+    if (images.length === 0) {
+      return res.status(500).json({
+        error: "No images could be generated.",
+        details: "Check server logs for Stability AI response errors.",
       });
     }
 
-    const prompt = buildPrompt({
-      title,
-      mainCharacter,
-      storyIdea,
-      ageRange,
-      pageCount
-    });
-
-    // This is the simple Responses call your SDK is happy with
-    const aiResponse = await openai.responses.create({
-      model: "gpt-4.1-mini",
-      input: prompt
-    });
-
-    // Pull the raw text from the response
-    const raw = aiResponse.output[0].content[0].text;
-    let parsed;
-
-    try {
-      parsed = JSON.parse(raw);
-    } catch (err) {
-      console.error("JSON parse error in /api/generate-book. Raw text:\n", raw);
-      // Fallback so the UI still shows something instead of a hard error
-      parsed = {
-        title: title || "Your Custom Story",
-        tagline: "",
-        ageRange: ageRange || "",
-        paragraphs: [raw],
-        prompts: []
-      };
-    }
-
-    if (!Array.isArray(parsed.paragraphs)) parsed.paragraphs = [];
-    if (!Array.isArray(parsed.prompts)) parsed.prompts = [];
-
-    return res.json(parsed);
+    return res.json({ images });
   } catch (err) {
-    console.error("Error in /api/generate-book:", err.response?.data || err.message || err);
-    return res.status(500).json({ error: "Failed to generate book." });
+    console.error("Error in /api/generate-images (Stability):", err);
+    return res.status(500).json({
+      error: "Failed to generate images.",
+      details: err?.message || String(err),
+    });
   }
 });
