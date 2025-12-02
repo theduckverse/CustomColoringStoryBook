@@ -232,9 +232,16 @@
             📄 Unlock & Download PDF (5 credits total)
           </button>
 
+          <button
+            id="generate-images-btn"
+            class="w-full mt-2 inline-flex items-center justify-center gap-2 text-xs font-semibold rounded-2xl px-4 py-2 bg-white border border-amber-300 text-amber-900 hover:bg-amber-50 transition disabled:opacity-60 disabled:cursor-not-allowed"
+            disabled>
+            🎨 Generate Coloring Page Previews
+          </button>
+
           <p class="mt-2 text-[11px] text-amber-800/80">
             Making a new story book uses <span class="font-semibold">1 Crayon Credit</span>. Unlocking downloads for that book uses
-            <span class="font-semibold">4 more credits</span> (5 total). Pages are laid out on two shelves so it feels like a real picture book.
+            <span class="font-semibold">4 more credits</span> (5 total). Pages are laid out on two shelves so it feels like a real picture book, and coloring page previews sit on the bottom shelf.
           </p>
         </div>
       </div>
@@ -338,6 +345,34 @@
           </div>
         </div>
 
+        <!-- NEW: Image shelf for coloring page previews -->
+        <div class="relative pb-6">
+          <div class="absolute left-0 right-0 bottom-0 h-4 bg-wood border-t border-woodDark shadow-inner"></div>
+
+          <div class="flex gap-4 px-2 pb-3">
+            <div id="images-card"
+                 class="hidden bg-white rounded-xl border-2 border-amber-300 p-4 w-full">
+              <div class="flex items-center justify-between gap-3 mb-2">
+                <div>
+                  <p class="text-[11px] uppercase tracking-[0.12em] text-amber-700 mb-0.5 flex items-center gap-1">
+                    <span>Coloring pages</span> <span>🎨</span>
+                  </p>
+                  <h3 class="text-lg font-bold text-amber-900">Coloring page previews</h3>
+                </div>
+                <span class="text-[11px] rounded-full px-2.5 py-1 bg-pink-50 text-pink-700 border border-pink-200">
+                  Preview only
+                </span>
+              </div>
+              <p class="text-xs text-amber-800/90 mb-2">
+                These previews are AI-drawn from your page prompts in line-art style. Once downloads are unlocked, you can print them or use them in drawing apps.
+              </p>
+              <div id="images-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <!-- images go here -->
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </section>
   </main>
@@ -379,6 +414,7 @@
   const generateBtnLabel = document.getElementById("generate-btn-label");
   const generateBtnSpinner = document.getElementById("generate-btn-spinner");
   const downloadBtn = document.getElementById("download-pdf-btn");
+  const imagesBtn = document.getElementById("generate-images-btn");
 
   const statusIcon = document.getElementById("status-icon");
   const statusTitle = document.getElementById("status-title");
@@ -394,6 +430,9 @@
   const pagesGridTop = document.getElementById("pages-grid-top");
   const pagesGridBottom = document.getElementById("pages-grid-bottom");
 
+  const imagesCard = document.getElementById("images-card");
+  const imagesGrid = document.getElementById("images-grid");
+
   let lastBookData = null;
 
   // =================== STATUS + LOADING ===================
@@ -402,7 +441,6 @@
     generateBtnSpinner.classList.toggle("hidden", !isLoading);
     generateBtnLabel.textContent = isLoading ? "Generating..." : labelWhenReady;
 
-    // fun little motion in the status icon while loading
     if (isLoading) {
       statusIcon.classList.add("animate-spin");
     } else {
@@ -419,6 +457,10 @@
   // =================== RENDER FUNCTIONS ===================
   function renderBook(data) {
     const { title, tagline, paragraphs, prompts, ageRange } = data;
+
+    // Clear old images when a new book is made
+    imagesGrid.innerHTML = "";
+    imagesCard.classList.add("hidden");
 
     // --- Story "overview" card at the top shelf ---
     storyTitleEl.textContent = title || "Your Custom Story";
@@ -452,7 +494,6 @@
 
     function createPageCard(item, index) {
       const pageNumber = item.page || index + 1;
-      // Try to give each page its own sentence; if we run out, reuse the last one
       const snippet =
         sentences[index] ||
         sentences[sentences.length - 1] ||
@@ -513,6 +554,41 @@
     lastBookData = data;
     downloadBtn.disabled = false;
     downloadsUnlockedForCurrentBook = false;
+
+    // Enable image previews button if we have prompts
+    imagesBtn.disabled = !(allPrompts.length > 0);
+  }
+
+  function renderImages(images) {
+    imagesGrid.innerHTML = "";
+    images.forEach((img) => {
+      const wrapper = document.createElement("figure");
+      wrapper.className =
+        "bg-[#FFFBEB] rounded-xl border border-amber-200 overflow-hidden flex flex-col";
+
+      const imageEl = document.createElement("img");
+      imageEl.src = img.url;
+      imageEl.alt = `Coloring page ${img.page}`;
+      imageEl.className = "w-full h-auto block";
+
+      const caption = document.createElement("figcaption");
+      caption.className = "text-xs text-amber-800 px-3 py-2";
+      caption.textContent = `Page ${img.page}`;
+
+      wrapper.appendChild(imageEl);
+      wrapper.appendChild(caption);
+      imagesGrid.appendChild(wrapper);
+    });
+
+    if (images.length > 0) {
+      imagesCard.classList.remove("hidden");
+    }
+
+    setStatus({
+      icon: "🖍️",
+      title: "Coloring page previews ready.",
+      text: "These are AI line-art pages based on your story prompts. Unlock downloads to save or print them."
+    });
   }
 
   // =================== INITIALIZE CREDITS ===================
@@ -555,6 +631,7 @@
 
     setLoading(true);
     downloadBtn.disabled = true;
+    imagesBtn.disabled = true;
     lastBookData = null;
     downloadsUnlockedForCurrentBook = false;
 
@@ -651,6 +728,53 @@
     }
   });
 
+  // =================== GENERATE IMAGES (NO EXTRA CREDITS, PREVIEW ONLY) ===================
+  imagesBtn.addEventListener("click", async () => {
+    if (!lastBookData || !lastBookData.prompts || !lastBookData.prompts.length) return;
+
+    imagesBtn.disabled = true;
+
+    setStatus({
+      icon: "🎨",
+      title: "Making coloring pages…",
+      text: "Scribbles is creating black-and-white line-art pages for your book."
+    });
+
+    try {
+      const res = await fetch("/api/generate-images", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompts: lastBookData.prompts })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        // Billing / quota issue
+        if (res.status === 402 || (data && data.error === "Billing limit reached")) {
+          setStatus({
+            icon: "💳",
+            title: "Coloring pages are locked for now.",
+            text: "Scribbles needs a grown-up to turn on billing or raise the limit before he can draw new pages."
+          });
+          return;
+        }
+        throw new Error(data?.error || "Image request failed");
+      }
+
+      renderImages(data.images || []);
+    } catch (err) {
+      console.error(err);
+      setStatus({
+        icon: "❌",
+        title: "Image generation failed.",
+        text: "Something went wrong while asking the AI for pictures. Try again later or check the server logs."
+      });
+    } finally {
+      imagesBtn.disabled = false;
+    }
+  });
+
   // =================== NAV BUTTON BEHAVIOR ===================
   const navHome = document.getElementById("nav-home");
   const navReading = document.getElementById("nav-reading");
@@ -699,7 +823,7 @@
       setStatus({
         icon: "📚",
         title: "Your shelf of stories.",
-        text: "New stories and page layouts appear here once Scribbles makes them."
+        text: "New stories, layouts, and coloring previews appear here once Scribbles makes them."
       });
     };
 
