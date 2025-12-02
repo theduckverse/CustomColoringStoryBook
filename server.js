@@ -215,7 +215,6 @@ app.post("/api/export-pdf", async (req, res) => {
 });
 
 // --- API: Generate coloring-page images with OpenAI ---
-// --- API: Generate coloring-page images with OpenAI ---
 app.post("/api/generate-images", async (req, res) => {
   const { prompts } = req.body || {};
 
@@ -223,7 +222,7 @@ app.post("/api/generate-images", async (req, res) => {
     return res.status(400).json({ error: "No prompts provided." });
   }
 
-  // Safety: don’t spam too many images in one go
+  // safety cap so nobody asks for 100 pages at once
   const maxImages = Math.min(prompts.length, 8);
 
   try {
@@ -244,11 +243,15 @@ Thick outlines, no shading, simple background, kid-friendly.
         model: "gpt-image-1",
         prompt: fullPrompt,
         n: 1,
-        size: "1024x1024",
-        response_format: "url"
+        size: "1024x1024"
+        // ❌ no response_format here – your API version doesn't support it
       });
 
-      console.log("Image API raw for page", page, JSON.stringify(response, null, 2));
+      console.log(
+        "Image API raw response for page",
+        page,
+        JSON.stringify(response, null, 2)
+      );
 
       const url = response.data?.[0]?.url;
       if (!url) {
@@ -267,10 +270,11 @@ Thick outlines, no shading, simple background, kid-friendly.
     );
     return res.status(500).json({
       error: "Image generation failed",
-      details: err?.response?.data || err?.message || String(err)
+      details: err?.response?.data || err?.message || String(err),
     });
   }
 });
+
 // --- SPA fallback (serve index.html) ---
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
@@ -280,5 +284,6 @@ app.get("*", (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);
 });
+
 
 
