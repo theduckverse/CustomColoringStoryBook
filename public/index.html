@@ -722,15 +722,17 @@
   });
 
   // =================== GENERATE IMAGES ===================
+  <script>
+  // ...everything above stays the same
+
   imagesBtn.addEventListener("click", async () => {
     if (!lastBookData || !lastBookData.prompts || !lastBookData.prompts.length) return;
 
     imagesBtn.disabled = true;
-
     setStatus({
-      icon: "🎨",
+      icon: "✨",
       title: "Making coloring pages…",
-      text: "Scribbles is creating black-and-white line-art pages for your book."
+      text: "Scribbles is drawing black-and-white line-art pages for your story."
     });
 
     try {
@@ -740,39 +742,52 @@
         body: JSON.stringify({ prompts: lastBookData.prompts })
       });
 
-      const data = await res.json();
-      console.log("Images from server:", data);
-
       if (!res.ok) {
-        const raw =
-          (data && (data.details?.message || data.details || data.error)) || "";
-        let niceMsg = raw || "Image generation failed.";
-
-        if (raw.includes("must be verified")) {
-          niceMsg =
-            "This account is still being turned on for the API. Once billing is fully verified, Scribbles will be able to draw pictures here.";
-        }
-
-        setStatus({
-          icon: "❌",
-          title: "Image generation failed.",
-          text: String(niceMsg)
-        });
-        return;
+        throw new Error(`Image request failed: ${res.status}`);
       }
 
-      renderImages(data.images || []);
+      const raw = await res.json();
+      console.log("Raw image payload from server:", raw);
+
+      // ⭐️ Normalize whatever the backend returns into [{ page, url }]
+      const sourceArray = raw.images || raw.data || [];
+      const normalized = sourceArray
+        .map((item, index) => {
+          if (!item) return null;
+
+          let url = item.url || item.image_url;
+
+          // Handle base64 style responses too
+          if (!url && item.b64_json) {
+            url = `data:image/png;base64,${item.b64_json}`;
+          }
+
+          if (!url) return null;
+
+          return {
+            page: item.page || index + 1,
+            url
+          };
+        })
+        .filter(Boolean);
+
+      console.log("Normalized images:", normalized);
+
+      renderImages(normalized);
     } catch (err) {
-      console.error("Image generation failed:", err);
+      console.error("Image API error:", err);
       setStatus({
         icon: "❌",
         title: "Image generation failed.",
-        text: "Something went wrong while asking the AI for pictures. Try again later or check the server logs."
+        text: "Something went wrong while asking the AI for pictures. Check the server logs or try again."
       });
     } finally {
       imagesBtn.disabled = false;
     }
   });
+
+  // renderImages(...) stays as you already have it
+</script>
 
   // =================== NAVIGATION ===================
   function smoothScrollTo(el) {
